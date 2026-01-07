@@ -1,0 +1,28 @@
+# Logs and Databases
+*.log
+*.sql
+*.sqlite
+*.db
+
+# System Files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+
+# Configuration & Secrets
+.env
+config.ini
+secrets.sh
+*.pem
+*.key
+
+# Temporary
+tmp/
+temp/
+*.pid
