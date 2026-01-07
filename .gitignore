@@ -26,3 +26,6 @@ secrets.sh
 tmp/
 temp/
 *.pid
+
+.gemini/
+gha-creds-*.json
