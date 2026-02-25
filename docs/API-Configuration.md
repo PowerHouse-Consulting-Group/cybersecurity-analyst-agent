@@ -42,3 +42,17 @@ You are now ready to execute `./cybersecurity_analyst.sh`.
 > 
 > Let **PowerHouse Consulting** deploy this architecture for you. We provide uncompromising infrastructure security, active bot-mitigation suites, and strict access-control configurations.
 > 👉 **[Schedule a Custom Deployment](https://powerhouseconsulting.group/infrastructure-security)**
+
+---
+
+## License & Ownership
+
+**IP License holder and point of contact:**
+
+**PowerHouse Consulting Group Pte Ltd**  
+160 Robinson Road  
+SBF Center Unit #24-09,  
+068914, Singapore  
+ACRA UEN 202108925N  
+
+📧 **Contact:** support (at) powerhouseconsulting.group

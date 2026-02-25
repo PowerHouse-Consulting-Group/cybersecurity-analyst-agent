@@ -50,3 +50,17 @@ Add the following line to run the analysis every Monday at 03:00 AM server time:
 > 
 > Let **PowerHouse Consulting** deploy this architecture for you. We provide uncompromising infrastructure security backed by a 99.99% uptime guarantee.
 > 👉 **[Explore Managed Deployments](https://powerhouseconsulting.group/infrastructure-security)**
+
+---
+
+## License & Ownership
+
+**IP License holder and point of contact:**
+
+**PowerHouse Consulting Group Pte Ltd**  
+160 Robinson Road  
+SBF Center Unit #24-09,  
+068914, Singapore  
+ACRA UEN 202108925N  
+
+📧 **Contact:** support (at) powerhouseconsulting.group

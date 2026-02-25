@@ -24,3 +24,17 @@ The Analyst agent monitors the "origin" server, catching sophisticated threats t
 > 🏢 **Require a Custom Integration?**
 > Integrating this SOC agent into custom architectures requires precision tuning. Let **PowerHouse Consulting** deploy this for you securely.
 > 👉 **[Schedule a Deep-Code Diagnostic & Custom Deployment](https://powerhouseconsulting.group/infrastructure-security)**
+
+---
+
+## License & Ownership
+
+**IP License holder and point of contact:**
+
+**PowerHouse Consulting Group Pte Ltd**  
+160 Robinson Road  
+SBF Center Unit #24-09,  
+068914, Singapore  
+ACRA UEN 202108925N  
+
+📧 **Contact:** support (at) powerhouseconsulting.group

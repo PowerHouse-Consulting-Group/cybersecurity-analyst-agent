@@ -4,6 +4,14 @@
 # Gemini CLI - AI Cybersecurity Log Analyst
 # Modularized with Nginx Support & Interactive CLI Mode
 # =================================================================
+# IP License holder and point of contact:
+# PowerHouse Consulting Group Pte Ltd
+# 160 Robinson Road
+# SBF Center Unit #24-09,
+# 068914, Singapore
+# ACRA UEN 202108925N
+# support (at) powerhouseconsulting.group
+# =================================================================
 
 # --- Global Variables ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

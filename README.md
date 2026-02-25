@@ -77,3 +77,17 @@ gcloud auth login --cred-file=/path/to/your/secure-sa-key.json
 > Let **PowerHouse Consulting** deploy this architecture for you. We provide uncompromising infrastructure security, active bot-mitigation suites, and deep-code security audits backed by a 99.99% uptime guarantee.
 > 
 > 👉 **[Schedule a Deep-Code Diagnostic & Custom Deployment](https://powerhouseconsulting.group/infrastructure-security)**
+
+---
+
+## License & Ownership
+
+**IP License holder and point of contact:**
+
+**PowerHouse Consulting Group Pte Ltd**  
+160 Robinson Road  
+SBF Center Unit #24-09,  
+068914, Singapore  
+ACRA UEN 202108925N  
+
+📧 **Contact:** support (at) powerhouseconsulting.group

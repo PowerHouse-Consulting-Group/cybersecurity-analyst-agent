@@ -32,3 +32,17 @@ Remember to escape periods (`\.`) and pipe (`|`) characters correctly if you int
 > 
 > Let **PowerHouse Consulting** handle your Server Hardening & Log Tuning.
 > 👉 **[Contact our DevOps Team](https://powerhouseconsulting.group/infrastructure-security)**
+
+---
+
+## License & Ownership
+
+**IP License holder and point of contact:**
+
+**PowerHouse Consulting Group Pte Ltd**  
+160 Robinson Road  
+SBF Center Unit #24-09,  
+068914, Singapore  
+ACRA UEN 202108925N  
+
+📧 **Contact:** support (at) powerhouseconsulting.group
