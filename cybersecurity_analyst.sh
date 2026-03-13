@@ -28,7 +28,7 @@ SCRIPT_MSG=""
 REMEDIATION_FILE=""
 
 # Ensure cleanup on exit
-trap 'rm -f "$LOCKFILE" "$JSON_PAYLOAD_FILE" "$RAW_RESPONSE_FILE"; exit $?' INT TERM EXIT
+trap 'err=$?; rm -f "$LOCKFILE" "$JSON_PAYLOAD_FILE" "$RAW_RESPONSE_FILE"; exit $err' INT TERM EXIT
 
 # --- Functions ---
 
@@ -78,78 +78,102 @@ parse_logs() {
     # Apache Logs
     if [[ -n "$APACHE_LOG_DIR" && -d "$APACHE_LOG_DIR" ]]; then
         log_info "--> Analyzing Apache/ModSecurity Logs in $APACHE_LOG_DIR..."
-        APACHE_ERRORS=$(nice -n 19 ionice -c 2 -n 7 sudo find "$APACHE_LOG_DIR" -type f -name "*.error.log" -mtime -7 
-            -exec nice -n 19 ionice -c 2 -n 7 grep -H -E "$KEYWORDS" {} + 2>/dev/null 
-            | grep -vE "$NOISE_FILTER" 
-            | cut -c 1-"$MAX_LINE_LENGTH" 
-            | sort 
-            | uniq -c 
-            | sort -nr 
+        APACHE_ERRORS=$(nice -n 19 ionice -c 2 -n 7 sudo find "$APACHE_LOG_DIR" -type f -name "*.error.log" -mtime -7 \
+            -exec nice -n 19 ionice -c 2 -n 7 grep -H -E "$KEYWORDS" {} + 2>/dev/null \
+            | grep -vE "$NOISE_FILTER" \
+            | cut -c 1-"$MAX_LINE_LENGTH" \
+            | sort \
+            | uniq -c \
+            | sort -nr \
             | head -n "$TOP_N")
 
         if [ -n "$APACHE_ERRORS" ]; then
-            SUMMARY_DATA+="### Top Apache Web Server Errors (Count | FilePath:LogLine):
-${APACHE_ERRORS}
-
-"
+            SUMMARY_DATA+="### Top Apache Web Server Errors (Count | FilePath:LogLine):\n${APACHE_ERRORS}\n\n"
         fi
     fi
 
     # Nginx Logs
     if [[ -n "$NGINX_LOG_DIR" && -d "$NGINX_LOG_DIR" ]]; then
         log_info "--> Analyzing Nginx Logs in $NGINX_LOG_DIR..."
-        NGINX_ERRORS=$(nice -n 19 ionice -c 2 -n 7 sudo find "$NGINX_LOG_DIR" -type f -name "*.error.log" -mtime -7 
-            -exec nice -n 19 ionice -c 2 -n 7 grep -H -E "$KEYWORDS" {} + 2>/dev/null 
-            | grep -vE "$NOISE_FILTER" 
-            | cut -c 1-"$MAX_LINE_LENGTH" 
-            | sort 
-            | uniq -c 
-            | sort -nr 
+        NGINX_ERRORS=$(nice -n 19 ionice -c 2 -n 7 sudo find "$NGINX_LOG_DIR" -type f -name "*.error.log" -mtime -7 \
+            -exec nice -n 19 ionice -c 2 -n 7 grep -H -E "$KEYWORDS" {} + 2>/dev/null \
+            | grep -vE "$NOISE_FILTER" \
+            | cut -c 1-"$MAX_LINE_LENGTH" \
+            | sort \
+            | uniq -c \
+            | sort -nr \
             | head -n "$TOP_N")
 
         if [ -n "$NGINX_ERRORS" ]; then
-            SUMMARY_DATA+="### Top Nginx Web Server Errors (Count | FilePath:LogLine):
-${NGINX_ERRORS}
-
-"
+            SUMMARY_DATA+="### Top Nginx Web Server Errors (Count | FilePath:LogLine):\n${NGINX_ERRORS}\n\n"
         fi
     fi
 
     # System & Firewall Logs
     if [[ -n "$SYSTEM_LOG_PATH" && -f "$SYSTEM_LOG_PATH" ]]; then
         log_info "--> Analyzing System & Firewall Logs ($SYSTEM_LOG_PATH)..."
-        SYSTEM_ERRORS=$(nice -n 19 ionice -c 2 -n 7 sudo grep -E "$DATE_PATTERN" "$SYSTEM_LOG_PATH" 2>/dev/null 
-            | grep -iE "$KEYWORDS" 
-            | cut -c 1-"$MAX_LINE_LENGTH" 
-            | sort 
-            | uniq -c 
-            | sort -nr 
+        SYSTEM_ERRORS=$(nice -n 19 ionice -c 2 -n 7 sudo grep -E "$DATE_PATTERN" "$SYSTEM_LOG_PATH" 2>/dev/null \
+            | grep -iE "$KEYWORDS" \
+            | cut -c 1-"$MAX_LINE_LENGTH" \
+            | sort \
+            | uniq -c \
+            | sort -nr \
             | head -n "$TOP_N")
 
         if [ -n "$SYSTEM_ERRORS" ]; then
-            SUMMARY_DATA+="### Top System/Firewall Events (Count | Message):
-${SYSTEM_ERRORS}
+            SUMMARY_DATA+="### Top System/Firewall Events (Count | Message):\n${SYSTEM_ERRORS}\n\n"
+        fi
+    fi
 
-"
+    # Journalctl Logs (systemd)
+    if [[ "$USE_JOURNALCTL" == "true" ]]; then
+        log_info "--> Analyzing Journalctl System Logs (Last 7 days)..."
+        JOURNAL_ERRORS=$(nice -n 19 ionice -c 2 -n 7 journalctl -p 0..3 --since "7 days ago" --no-pager 2>/dev/null \
+            | grep -vE "$NOISE_FILTER" \
+            | cut -c 1-"$MAX_LINE_LENGTH" \
+            | sort \
+            | uniq -c \
+            | sort -nr \
+            | head -n "$TOP_N")
+
+        if [ -n "$JOURNAL_ERRORS" ]; then
+            SUMMARY_DATA+="### Top Journalctl Priority Events (Count | Message):\n${JOURNAL_ERRORS}\n\n"
+        fi
+    fi
+
+    # MySQL/MariaDB Slow Query Logs
+    local SLOW_LOG="$MYSQL_SLOW_LOG_PATH"
+    if [[ -z "$SLOW_LOG" ]]; then
+        # Auto-detect if empty
+        SLOW_LOG=$(mysql -e "SHOW VARIABLES LIKE 'slow_query_log_file';" -sN 2>/dev/null | awk '{print $2}')
+    fi
+
+    if [[ -n "$SLOW_LOG" && -f "$SLOW_LOG" ]]; then
+        log_info "--> Analyzing MySQL/MariaDB Slow Query Logs ($SLOW_LOG)..."
+        MYSQL_ERRORS=$(nice -n 19 ionice -c 2 -n 7 sudo tail -n 5000 "$SLOW_LOG" 2>/dev/null \
+            | grep -iE "User@Host|Query_time|SET timestamp" -A 1 \
+            | grep -vE "\-\-" \
+            | head -n 1000 \
+            | cut -c 1-"$MAX_LINE_LENGTH")
+
+        if [ -n "$MYSQL_ERRORS" ]; then
+            SUMMARY_DATA+="### MySQL/MariaDB Slow Query Samples:\n${MYSQL_ERRORS}\n\n"
         fi
     fi
 
     # Mail Logs
     if [[ -n "$MAIL_LOG_PATH" && -f "$MAIL_LOG_PATH" ]]; then
         log_info "--> Analyzing Mail Logs ($MAIL_LOG_PATH)..."
-        MAIL_ERRORS=$(nice -n 19 ionice -c 2 -n 7 sudo grep -E "$DATE_PATTERN" "$MAIL_LOG_PATH" 2>/dev/null 
-            | grep -iE "$KEYWORDS" 
-            | cut -c 1-"$MAX_LINE_LENGTH" 
-            | sort 
-            | uniq -c 
-            | sort -nr 
+        MAIL_ERRORS=$(nice -n 19 ionice -c 2 -n 7 sudo grep -E "$DATE_PATTERN" "$MAIL_LOG_PATH" 2>/dev/null \
+            | grep -iE "$KEYWORDS" \
+            | cut -c 1-"$MAX_LINE_LENGTH" \
+            | sort \
+            | uniq -c \
+            | sort -nr \
             | head -n "$TOP_N")
 
         if [ -n "$MAIL_ERRORS" ]; then
-            SUMMARY_DATA+="### Top Mail Log Events (Count | Message):
-${MAIL_ERRORS}
-
-"
+            SUMMARY_DATA+="### Top Mail Log Events (Count | Message):\n${MAIL_ERRORS}\n\n"
         fi
     fi
 
@@ -159,8 +183,8 @@ ${MAIL_ERRORS}
     fi
 }
 
-# 3. Analyze with Gemini AI
-analyze_with_gemini() {
+# 3. Analyze with AI (Multi-LLM Support)
+analyze_with_ai() {
     local PROMPT=$(cat <<'EOP'
 You are a Senior Linux Server Cybersecurity Analyst.
 Your goal is to digest the provided server logs from the last week and produce a concise, high-value intelligence report for the Chief Information Security Officer (CISO).
@@ -198,11 +222,12 @@ Here is the log data:
 EOP
 )
 
-    local JSON_TEXT_CONTENT=$(printf "%s
+    local JSON_TEXT_CONTENT=$(printf "%s\n\n%s" "$PROMPT" "$SUMMARY_DATA" | jq -R -s '.')
+    log_info "Sending summarized logs to $LLM_PROVIDER for analysis..."
 
-%s" "$PROMPT" "$SUMMARY_DATA" | jq -R -s '.')
-
-    cat <<EOF > "$JSON_PAYLOAD_FILE"
+    case "$LLM_PROVIDER" in
+        "gemini")
+            cat <<EOF > "$JSON_PAYLOAD_FILE"
 {
   "contents": [{
     "role": "user",
@@ -210,18 +235,53 @@ EOP
   }]
 }
 EOF
+            curl -s -X POST -H "Authorization: Bearer $(gcloud auth print-access-token 2>/dev/null)" -H "Content-Type: application/json" "https://aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/global/publishers/google/models/${MODEL_ID}:streamGenerateContent" -d @"$JSON_PAYLOAD_FILE" > "$RAW_RESPONSE_FILE"
+            FINAL_REPORT=$(jq -j '.[].candidates[0].content.parts[0].text' "$RAW_RESPONSE_FILE" 2>/dev/null)
+            ;;
 
-    log_info "Sending summarized logs to Gemini for analysis..."
-    curl -s -X POST -H "Authorization: Bearer $(gcloud auth print-access-token)" -H "Content-Type: application/json" "$MODEL_API_URL" -d @"$JSON_PAYLOAD_FILE" > "$RAW_RESPONSE_FILE"
-    
-    FINAL_REPORT=$(jq -j '.[].candidates[0].content.parts[0].text' "$RAW_RESPONSE_FILE" 2>/dev/null)
+        "openai"|"local")
+            cat <<EOF > "$JSON_PAYLOAD_FILE"
+{
+  "model": "${OPENAI_MODEL_ID}",
+  "messages": [
+    {
+      "role": "user",
+      "content": ${JSON_TEXT_CONTENT}
+    }
+  ]
+}
+EOF
+            curl -s -X POST -H "Authorization: Bearer ${OPENAI_API_KEY}" -H "Content-Type: application/json" "${OPENAI_API_URL}" -d @"$JSON_PAYLOAD_FILE" > "$RAW_RESPONSE_FILE"
+            FINAL_REPORT=$(jq -j '.choices[0].message.content' "$RAW_RESPONSE_FILE" 2>/dev/null)
+            ;;
+
+        "claude")
+            cat <<EOF > "$JSON_PAYLOAD_FILE"
+{
+  "model": "${CLAUDE_MODEL_ID}",
+  "max_tokens": 4096,
+  "messages": [
+    {
+      "role": "user",
+      "content": ${JSON_TEXT_CONTENT}
+    }
+  ]
+}
+EOF
+            curl -s -X POST -H "x-api-key: ${CLAUDE_API_KEY}" -H "anthropic-version: 2023-06-01" -H "Content-Type: application/json" "https://api.anthropic.com/v1/messages" -d @"$JSON_PAYLOAD_FILE" > "$RAW_RESPONSE_FILE"
+            FINAL_REPORT=$(jq -j '.content[0].text' "$RAW_RESPONSE_FILE" 2>/dev/null)
+            ;;
+
+        *)
+            log_error "Unknown LLM_PROVIDER: $LLM_PROVIDER"
+            exit 1
+            ;;
+    esac
 
     if [[ -z "$FINAL_REPORT" || "$FINAL_REPORT" == "null" ]]; then
-        local ERROR_DETAILS=$(jq '.' "$RAW_RESPONSE_FILE")
-        FINAL_REPORT="Failed to get a valid analysis from the Gemini API. The raw API response was:
-----------------------------------------
-${ERROR_DETAILS}"
-        log_error "API Error occurred."
+        local ERROR_DETAILS=$(cat "$RAW_RESPONSE_FILE")
+        FINAL_REPORT="Failed to get a valid analysis from the API. The raw API response was:\n----------------------------------------\n${ERROR_DETAILS}"
+        log_error "API Error occurred during communication with $LLM_PROVIDER."
         return 1
     fi
 }
@@ -311,6 +371,8 @@ handle_output() {
     fi
 }
 
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+
 # --- Main Execution Flow ---
 
 # Check for lockfile
@@ -331,7 +393,9 @@ done
 
 load_config
 parse_logs
-if analyze_with_gemini; then
+if analyze_with_ai; then
     process_remediation
     handle_output
 fi
+fi
+
