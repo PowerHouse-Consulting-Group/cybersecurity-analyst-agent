@@ -348,15 +348,24 @@ handle_output() {
             cat "$REMEDIATION_FILE"
             echo -e "
 "
-            # --- SECURITY AUDIT: Static Blacklist Scanner ---
-            local DANGEROUS_CMDS="rm -rf|mkfs|iptables -F|iptables --flush|dd if=|chmod 777|chown -R root:root /"
-            if grep -iE "$DANGEROUS_CMDS" "$REMEDIATION_FILE" > /dev/null; then
-                log_error "CRITICAL SECURITY ALERT: The AI generated a script containing potentially destructive commands."
-                log_error "The script has been saved to $REMEDIATION_FILE for manual review, but execution is BLOCKED."
+            # --- SECURITY AUDIT: Strict Allowlist Scanner ---
+            # Only allow specific safe commands, comments, and echo statements
+            local ALLOWED_CMDS="^(csf |ufw |chmod |chown |systemctl |kill |#|echo |exit |sudo csf|sudo ufw)"
+            # Check all non-empty lines (skipping the shebang on line 1) for unauthorized commands
+            local INVALID_CMDS=$(grep -vE '^[[:space:]]*$' "$REMEDIATION_FILE" | tail -n +2 | grep -vE "$ALLOWED_CMDS")
+            
+            if [ -n "$INVALID_CMDS" ]; then
+                log_error "CRITICAL SECURITY ALERT: The AI generated a script containing unauthorized commands."
+                log_error "The following commands are not on the safe allowlist:"
+                echo -e "\e[31m$INVALID_CMDS\e[0m"
+                log_error "Execution is BLOCKED. The script has been saved to $REMEDIATION_FILE for manual review."
                 return 1
             fi
 
-            read -p "Do you want to execute this remediation script now? (y/N): " confirm
+            echo -e "\n\e[33m⚠️ WARNING: You are about to execute an AI-generated script with ROOT privileges."
+            echo -e "Although the script passed the strict allowlist scanner, prompt-injected or obfuscated payloads may still exist."
+            echo -e "Review the commands above carefully for any malicious arguments or suspicious network activity.\e[0m\n"
+            read -p "Do you explicitly trust and want to execute this remediation script now? (y/N): " confirm
             if [[ "$confirm" =~ ^[Yy]$ ]]; then
                 log_info "Executing remediation script..."
                 sudo bash "$REMEDIATION_FILE"
