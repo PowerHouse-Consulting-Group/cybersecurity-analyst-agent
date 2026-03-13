@@ -17,6 +17,7 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="${SCRIPT_DIR}/.env"
 LOCKFILE="/tmp/daily_log_analyst.lock"
+umask 077
 JSON_PAYLOAD_FILE=$(mktemp /tmp/gemini_payload.XXXXXX.json)
 RAW_RESPONSE_FILE=$(mktemp /tmp/gemini_response.XXXXXX.json)
 CURRENT_MONTH=$(date +'%b')
@@ -39,6 +40,15 @@ log_info() {
 
 log_error() {
     echo -e "[ERROR] $1" >&2
+}
+
+scrub_pii() {
+    local input="$1"
+    # Mask IPv4 addresses
+    input=$(echo "$input" | sed -E 's/([0-9]{1,3}\.){3}[0-9]{1,3}/[REDACTED_IP]/g')
+    # Mask standard Email addresses
+    input=$(echo "$input" | sed -E 's/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/[REDACTED_EMAIL]/g')
+    echo "$input"
 }
 
 # 1. Configuration Loader
@@ -222,7 +232,8 @@ Here is the log data:
 EOP
 )
 
-    local JSON_TEXT_CONTENT=$(printf "%s\n\n%s" "$PROMPT" "$SUMMARY_DATA" | jq -R -s '.')
+    local SCRUBBED_DATA=$(scrub_pii "$SUMMARY_DATA")
+    local JSON_TEXT_CONTENT=$(printf "%s\n\n%s" "$PROMPT" "$SCRUBBED_DATA" | jq -R -s '.')
     log_info "Sending summarized logs to $LLM_PROVIDER for analysis..."
 
     case "$LLM_PROVIDER" in
@@ -337,6 +348,14 @@ handle_output() {
             cat "$REMEDIATION_FILE"
             echo -e "
 "
+            # --- SECURITY AUDIT: Static Blacklist Scanner ---
+            local DANGEROUS_CMDS="rm -rf|mkfs|iptables -F|iptables --flush|dd if=|chmod 777|chown -R root:root /"
+            if grep -iE "$DANGEROUS_CMDS" "$REMEDIATION_FILE" > /dev/null; then
+                log_error "CRITICAL SECURITY ALERT: The AI generated a script containing potentially destructive commands."
+                log_error "The script has been saved to $REMEDIATION_FILE for manual review, but execution is BLOCKED."
+                return 1
+            fi
+
             read -p "Do you want to execute this remediation script now? (y/N): " confirm
             if [[ "$confirm" =~ ^[Yy]$ ]]; then
                 log_info "Executing remediation script..."
