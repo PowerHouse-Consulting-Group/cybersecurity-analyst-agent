@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://via.placeholder.com/800x200/222222/D4AF37?text=PowerHouse+Consulting:+Securing+the+Core" alt="Securing the Core: Infrastructure & Threat Mitigation" width="100%">
+  <img src="https://placehold.co/800x200/222222/D4AF37.png?text=PowerHouse+Consulting:+Securing+the+Core" alt="Securing the Core: Infrastructure & Threat Mitigation" width="100%">
   <h1>🛡️ Autonomous AI Cybersecurity Log Analyst</h1>
   <p><b>An AI-Driven Security Operations Center (SOC) for Enterprise Linux Servers. Powered by Multiple LLMs (Gemini, OpenAI, Claude, Local).</b></p>
   <p>
