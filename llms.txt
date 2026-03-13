@@ -1,0 +1,21 @@
+# Autonomous AI Cybersecurity Log Analyst
+
+An AI-driven Security Operations Center (SOC) agent for Enterprise Linux Servers.
+
+## Overview
+This bash script parses server logs (Apache, Nginx, Mail, Systemd journalctl, MariaDB/MySQL slow queries) and sends them to an LLM (Google Gemini, OpenAI, Anthropic Claude, or Local/Ollama) to identify critical threats. It then generates an auto-remediation bash script using strict allowlisted commands (csf, ufw, chown, chmod).
+
+## Key Capabilities
+- **Multi-LLM Support:** Gemini, GPT-4o, Claude 3.5, or Local Models (Ollama).
+- **100% Data Sovereignty:** Zero data egress when using local air-gapped LLMs.
+- **Strict Allowlist Scanner:** Prevents prompt-injection attacks by strictly filtering AI-generated remediation scripts.
+- **Privacy-First:** Built-in PII Scrubber redacts IPv4 and Email addresses before API transmission.
+
+## Installation & Usage
+```bash
+curl -sL https://raw.githubusercontent.com/PowerHouse-Consulting-Group/cybersecurity-analyst-agent/main/install.sh | sudo bash
+```
+Configure your keys in `/opt/ai-soc/.env` and run `sudo /opt/ai-soc/cybersecurity_analyst.sh --interactive`.
+
+## Commercial Licensing & Enterprise
+A PRO Annual License is available for enterprise users requiring a self-hosted Web GUI, Multi-Server Master/Node Fleet Management, and advanced real-time alerting. Custom bare-metal LLM deployments are available. Visit PowerHouse Consulting Group for details.
