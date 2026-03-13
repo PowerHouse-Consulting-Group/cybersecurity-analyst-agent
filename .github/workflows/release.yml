@@ -1,0 +1,52 @@
+name: Build and Release Packages
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install FPM
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ruby ruby-dev rubygems build-essential
+          sudo gem install --no-document fpm
+          
+      - name: Prepare Package Directory
+        run: |
+          mkdir -p buildroot/opt/ai-soc
+          cp cybersecurity_analyst.sh buildroot/opt/ai-soc/
+          cp .env.example buildroot/opt/ai-soc/
+          chmod +x buildroot/opt/ai-soc/cybersecurity_analyst.sh
+          
+      - name: Build DEB Package
+        run: |
+          fpm -s dir -t deb \
+            -n ai-cybersecurity-analyst \
+            -v ${{ github.ref_name }} \
+            --architecture all \
+            --maintainer "support@powerhouseconsulting.group" \
+            --description "Autonomous AI Cybersecurity Log Analyst" \
+            -C buildroot opt
+            
+      - name: Build RPM Package
+        run: |
+          fpm -s dir -t rpm \
+            -n ai-cybersecurity-analyst \
+            -v ${{ github.ref_name }} \
+            --architecture all \
+            --maintainer "support@powerhouseconsulting.group" \
+            --description "Autonomous AI Cybersecurity Log Analyst" \
+            -C buildroot opt
+            
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            *.deb
+            *.rpm

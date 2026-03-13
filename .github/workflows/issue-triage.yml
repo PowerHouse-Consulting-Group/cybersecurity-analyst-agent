@@ -1,0 +1,29 @@
+name: Issue Triage
+
+on:
+  issues:
+    types: [opened, edited]
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v6
+        with:
+          script: |
+            const issue = context.payload.issue;
+            if (issue.title.toLowerCase().includes('bug') || issue.body.toLowerCase().includes('bug report')) {
+              github.rest.issues.addLabels({
+                issue_number: issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                labels: ['bug', 'triage']
+              })
+            } else if (issue.title.toLowerCase().includes('feature') || issue.body.toLowerCase().includes('feature request')) {
+              github.rest.issues.addLabels({
+                issue_number: issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                labels: ['enhancement', 'triage']
+              })
+            }

@@ -1,0 +1,20 @@
+name: PR Review & Tests
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-and-review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install BATS
+        run: sudo apt-get install -y bats
+        
+      - name: Run Unit Tests
+        run: bats tests/test_cybersecurity_analyst.bats
+
+      - name: Security & Code Review Note
+        run: echo "Tests passed. Awaiting human engineering review from PowerHouse Consulting Group for final merge approval. AI auto-merging is disabled for security reasons."
