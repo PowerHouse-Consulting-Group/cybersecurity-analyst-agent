@@ -14,7 +14,7 @@ jobs:
       - name: Install FPM
         run: |
           sudo apt-get update
-          sudo apt-get install -y ruby ruby-dev rubygems build-essential
+          sudo apt-get install -y ruby ruby-dev rubygems build-essential rpm
           sudo gem install --no-document fpm
           
       - name: Prepare Package Directory
@@ -28,7 +28,7 @@ jobs:
         run: |
           fpm -s dir -t deb \
             -n ai-cybersecurity-analyst \
-            -v ${{ github.ref_name }} \
+            -v "${GITHUB_REF_NAME#v}" \
             --architecture all \
             --maintainer "support@powerhouseconsulting.group" \
             --description "Autonomous AI Cybersecurity Log Analyst" \
@@ -38,7 +38,7 @@ jobs:
         run: |
           fpm -s dir -t rpm \
             -n ai-cybersecurity-analyst \
-            -v ${{ github.ref_name }} \
+            -v "${GITHUB_REF_NAME#v}" \
             --architecture all \
             --maintainer "support@powerhouseconsulting.group" \
             --description "Autonomous AI Cybersecurity Log Analyst" \
