@@ -81,6 +81,39 @@ load_config() {
     MODEL_API_URL="https://aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/global/publishers/google/models/${MODEL_ID}:streamGenerateContent"
 }
 
+check_dependencies() {
+    local missing_deps=0
+    
+    if ! command -v jq &> /dev/null; then
+        log_error "Critical dependency missing: 'jq'."
+        log_error "Please install it via your package manager (e.g., sudo apt install jq or sudo dnf install jq)."
+        missing_deps=1
+    fi
+    
+    if ! command -v curl &> /dev/null; then
+        log_error "Critical dependency missing: 'curl'."
+        log_error "Please install it via your package manager."
+        missing_deps=1
+    fi
+    
+    if [[ "$LLM_PROVIDER" == "gemini" ]] && ! command -v gcloud &> /dev/null; then
+        log_error "Critical dependency missing: 'gcloud' CLI."
+        log_error "You selected 'gemini' as the LLM_PROVIDER. This requires the Google Cloud CLI to be installed and authenticated on this server."
+        missing_deps=1
+    fi
+    
+    if [ "$INTERACTIVE" -eq 0 ] && [ ! -x "/usr/sbin/sendmail" ]; then
+        log_error "Critical dependency missing: '/usr/sbin/sendmail'."
+        log_error "Cron (non-interactive) mode requires a working Mail Transfer Agent (MTA) like Postfix or Exim to send email reports."
+        missing_deps=1
+    fi
+
+    if [ "$missing_deps" -eq 1 ]; then
+        log_error "Exiting due to missing dependencies."
+        exit 1
+    fi
+}
+
 # 2. Parse Server Logs
 parse_logs() {
     log_info "Starting weekly log analysis for date pattern: '${DATE_PATTERN}'"
@@ -420,6 +453,7 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 load_config
+check_dependencies
 parse_logs
 if analyze_with_ai; then
     process_remediation

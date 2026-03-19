@@ -3,6 +3,21 @@ set -e
 
 echo "Installing Autonomous AI Cybersecurity Log Analyst..."
 
+echo "Checking for required dependencies (jq, curl)..."
+if ! command -v jq &> /dev/null || ! command -v curl &> /dev/null; then
+    echo "Dependencies missing. Attempting to install..."
+    if command -v apt-get &> /dev/null; then
+        sudo apt-get update && sudo apt-get install -y jq curl
+    elif command -v dnf &> /dev/null; then
+        sudo dnf install -y jq curl
+    elif command -v yum &> /dev/null; then
+        sudo yum install -y jq curl
+    else
+        echo "Error: Package manager not found. Please install 'jq' and 'curl' manually."
+        exit 1
+    fi
+fi
+
 INSTALL_DIR="/opt/ai-soc"
 sudo mkdir -p "$INSTALL_DIR"
 
