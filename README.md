@@ -31,6 +31,12 @@ We believe in absolute data privacy. You can route your log analysis through:
 
 ## 🚀 Installation & Configuration
 
+### Prerequisites & Potential Failure Scenarios
+Before installing, ensure your system meets the following requirements. The script may break or fail silently if these are missing:
+- **`jq` and `curl`:** Essential for parsing JSON and making API requests. The script will fail without them. (Install via `sudo apt install jq curl` or `sudo dnf install jq curl`).
+- **Mail Transfer Agent (MTA):** If you plan to run the script via Cron and receive email reports, your server must have a working MTA providing `/usr/sbin/sendmail` (e.g., Postfix, Exim). Without this, Cron reports will fail to send.
+- **For Google Gemini Users:** The script authenticates using `gcloud auth print-access-token`. You MUST have the Google Cloud CLI (`gcloud`) installed and authenticated (e.g., via `gcloud auth login` or a service account) on your server. If using OpenAI, Claude, or Local LLMs, this is not required.
+
 ### Option A: Universal Installer (Recommended)
 ```bash
 curl -sL https://raw.githubusercontent.com/PowerHouse-Consulting-Group/cybersecurity-analyst-agent/main/install.sh | sudo bash
