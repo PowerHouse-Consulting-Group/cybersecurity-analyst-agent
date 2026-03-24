@@ -66,6 +66,21 @@ Or schedule via Cron:
 
 ---
 
+## 💎 Upgrade to CyberSecurity Analyst PRO
+
+While the Community Version provides essential log analysis, our **PRO Version** is designed for Enterprise Defense, offering a real-time Terminal UI (TUI) Dashboard and active remediation capabilities.
+
+**PRO Features Include:**
+*   **[I] AI Threat Insight & OSINT:** Auto-enrich attacker IPs via Shodan & AbuseIPDB for deep context.
+*   **[T] Blast Radius Timeline:** Cross-correlate Nginx, Auth, and DB logs 5 mins before/after breaches to build an incident timeline.
+*   **[D] Active Deception & Tarpits:** Route attackers to endlessh honeypots instead of just dropping packets.
+*   **[R] MITRE ATT&CK Reporting:** Generate 1-click executive PDF/JSON reports for SOC2, PCI-DSS, and ISO27001 audits.
+*   **[S] Global Fleet Defense:** Sync firewall blocks across your entire server cluster instantly.
+
+👉 **[GET PRO TODAY: PowerHouse Consulting Security](https://powerhouseconsulting.group/infrastructure-security/)**
+
+---
+
 ## ❓ FAQ
 **Q: Do my logs get sent to your servers?**
 A: No. The script runs entirely on your infrastructure and communicates directly with the LLM provider you configure (or your local Ollama instance).

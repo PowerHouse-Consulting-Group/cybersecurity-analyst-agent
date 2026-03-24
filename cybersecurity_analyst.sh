@@ -430,6 +430,34 @@ handle_output() {
         
         log_info "Log analysis complete. Report sent to $YOUR_EMAIL."
     fi
+
+    if [ "$INTERACTIVE" -eq 1 ]; then
+        display_pro_upsell
+    fi
+}
+
+# --- PRO Features Upsell Dashboard ---
+display_pro_upsell() {
+    echo -e "\n\e[1;36m┌──────────────────────────────────────────────────────────────────────────┐\e[0m"
+    echo -e "\e[1;36m│\e[0m \e[1;37m🚀 UPGRADE TO CYBERSECURITY ANALYST PRO FOR ENTERPRISE DEFENSE\e[0m         \e[1;36m│\e[0m"
+    echo -e "\e[1;36m├──────────────────────────────────────────────────────────────────────────┤\e[0m"
+    echo -e "\e[1;36m│\e[0m \e[1;32m[COMING SOON]\e[0m \e[1;37mAI Threat Insight & OSINT Enrichment\e[0m                       \e[1;36m│\e[0m"
+    echo -e "\e[1;36m│\e[0m \e[0;90mAuto-enrich attacker IPs via Shodan & AbuseIPDB for deep context.        \e[1;36m│\e[0m"
+    echo -e "\e[1;36m│\e[0m                                                                          \e[1;36m│\e[0m"
+    echo -e "\e[1;36m│\e[0m \e[1;32m[COMING SOON]\e[0m \e[1;37mBlast Radius Timeline Correlation\e[0m                          \e[1;36m│\e[0m"
+    echo -e "\e[1;36m│\e[0m \e[0;90mCross-correlate Nginx, Auth, and DB logs 5 mins before/after breaches.   \e[1;36m│\e[0m"
+    echo -e "\e[1;36m│\e[0m                                                                          \e[1;36m│\e[0m"
+    echo -e "\e[1;36m│\e[0m \e[1;32m[COMING SOON]\e[0m \e[1;37mActive Deception & SSH Tarpitting\e[0m                          \e[1;36m│\e[0m"
+    echo -e "\e[1;36m│\e[0m \e[0;90mRoute attackers to endlessh honeypots instead of just dropping packets.  \e[1;36m│\e[0m"
+    echo -e "\e[1;36m│\e[0m                                                                          \e[1;36m│\e[0m"
+    echo -e "\e[1;36m│\e[0m \e[1;32m[COMING SOON]\e[0m \e[1;37mMITRE ATT&CK Mapping & Compliance PDFs\e[0m                    \e[1;36m│\e[0m"
+    echo -e "\e[1;36m│\e[0m \e[0;90m1-Click executive reports for SOC2, PCI-DSS, and ISO27001 audits.        \e[1;36m│\e[0m"
+    echo -e "\e[1;36m│\e[0m                                                                          \e[1;36m│\e[0m"
+    echo -e "\e[1;36m│\e[0m \e[1;32m[COMING SOON]\e[0m \e[1;37mCross-Server Global Fleet Defense\e[0m                         \e[1;36m│\e[0m"
+    echo -e "\e[1;36m│\e[0m \e[0;90mSync firewall blocks across your entire server cluster instantly.        \e[1;36m│\e[0m"
+    echo -e "\e[1;36m├──────────────────────────────────────────────────────────────────────────┤\e[0m"
+    echo -e "\e[1;36m│\e[0m \e[1;33m👉 GET PRO TODAY: https://powerhouseconsulting.group/infrastructure-security/\e[0m \e[1;36m│\e[0m"
+    echo -e "\e[1;36m└──────────────────────────────────────────────────────────────────────────┘\e[0m\n"
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
