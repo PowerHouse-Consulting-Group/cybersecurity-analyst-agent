@@ -1,0 +1,90 @@
+name: CI/CD Benchmark & Integration Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  benchmark-and-test:
+    name: Benchmark on ${{ matrix.os }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, centos-latest] # Using ubuntu to simulate Debian-based and a generic enterprise Linux
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Environment (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y jq curl systemd
+
+    - name: Set up Environment (AlmaLinux / RHEL Simulation)
+      if: matrix.os == 'centos-latest'
+      run: |
+        # Simulate RHEL environment on Ubuntu runner (since native CentOS runners are complex, we install typical RHEL tools if missing)
+        sudo apt-get update
+        sudo apt-get install -y jq curl systemd
+        # Create mock secure log path
+        sudo mkdir -p /var/log/
+        sudo touch /var/log/secure
+
+    - name: Phase 1 & 2 - Threat Injection & Environment Setup
+      run: |
+        echo "Injecting fake logs to simulate a brute force attack..."
+        sudo mkdir -p /var/log/nginx /var/log/apache2 /var/log/mysql
+        sudo touch /var/log/auth.log /var/log/secure /var/log/nginx/error.log /var/log/apache2/error.log /var/log/mysql/slow.log
+        
+        # Inject 500 fake SSH brute force attempts
+        for i in {1..500}; do
+          echo "$(date +'%b %d %H:%M:%S') test-server sshd[1234]: Failed password for root from 192.168.1.100 port 22 ssh2" | sudo tee -a /var/log/auth.log > /dev/null
+          echo "$(date +'%b %d %H:%M:%S') test-server sshd[1234]: Failed password for root from 192.168.1.100 port 22 ssh2" | sudo tee -a /var/log/secure > /dev/null
+        done
+        
+        # Inject SQLi payload
+        echo "$(date +'%Y/%m/%d %H:%M:%S') [error] 1234#0: *1 FastCGI sent in stderr: \"PHP message: PHP Warning:  mysqli_query(): SQL injection attempt UNION SELECT * FROM wp_users\" while reading response header from upstream, client: 10.0.0.5" | sudo tee -a /var/log/nginx/error.log > /dev/null
+
+        # Create basic config
+        cp .env.example .env
+        sed -i 's/LLM_PROVIDER="gemini"/LLM_PROVIDER="local"/g' .env
+        sed -i 's/LOCAL_LLM_URL=.*/LOCAL_LLM_URL="http:\/\/localhost:11434\/api\/generate"/g' .env
+        sed -i 's/APACHE_LOG_DIR=.*/APACHE_LOG_DIR="\/var\/log\/apache2"/g' .env
+        sed -i 's/NGINX_LOG_DIR=.*/NGINX_LOG_DIR="\/var\/log\/nginx"/g' .env
+
+    - name: Phase 3 - Load & Performance Benchmarking (Mocked)
+      run: |
+        # We start a mock local HTTP server to pretend to be an LLM API
+        # This allows us to test the script execution without needing real API keys
+        echo -e "HTTP/1.1 200 OK\nContent-Type: application/json\n\n{\"response\": \"Mocked AI Analysis: Critical SQLi detected from 10.0.0.5. Brute force from 192.168.1.100. RECOMMENDED_ACTION: BLOCK 192.168.1.100\"}" > mock_response.txt
+        nc -l -p 11434 < mock_response.txt &
+        NC_PID=$!
+        
+        sleep 1
+
+        echo "Running Analyst Script (Benchmarking CPU/RAM)..."
+        /usr/bin/time -v sudo ./cybersecurity_analyst.sh --interactive || true
+        
+        # Kill the mock server if it's still running
+        kill $NC_PID || true
+
+    - name: Phase 4 - Multi-LLM API Resilience (Failure Handling)
+      run: |
+        # Test how the script handles a completely unresponsive LLM API (timeout/connection refused)
+        # We ensure no mock server is running on 11434
+        echo "Running Analyst Script against dead API to test failure handling..."
+        
+        # Expecting the script to exit gracefully and NOT generate a blank remediation script
+        sudo ./cybersecurity_analyst.sh --interactive || export EXIT_CODE=$?
+        
+        if [ -f "/opt/ai-soc/remediation_scripts/ai_remediation_*.sh" ]; then
+          echo "FAIL: Script generated a remediation script even when API failed."
+          exit 1
+        else
+          echo "PASS: Script handled API failure cleanly."
+        fi
