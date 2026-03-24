@@ -7,6 +7,16 @@ body:
     attributes:
       value: |
         Thanks for your interest in improving the project!
+  - type: dropdown
+    id: version
+    attributes:
+      label: Which version are you using?
+      description: Are you using the free community version or the PRO version?
+      options:
+        - Community (Free)
+        - PRO Version
+    validations:
+      required: true
   - type: textarea
     id: feature-desc
     attributes:
