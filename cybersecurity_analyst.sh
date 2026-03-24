@@ -460,6 +460,19 @@ display_pro_upsell() {
     echo -e "\e[1;36m└──────────────────────────────────────────────────────────────────────────┘\e[0m\n"
 }
 
+# --- Header Logo ---
+display_header() {
+    # Cyberpunk Color Scheme: Cyan (\e[1;36m) and Magenta (\e[1;35m)
+    echo -e "\e[1;36m   ______      __                 \e[1;35m_____                      _ __       "
+    echo -e "\e[1;36m  / ____/_  __/ /_  ___  _____   \e[1;35m/ ___/___  ________  ______(_) /___  __"
+    echo -e "\e[1;36m / /   / / / / __ \/ _ \/ ___/   \e[1;35m\__ \/ _ \/ ___/ / / / ___/ / __/ / / /"
+    echo -e "\e[1;35m/ /___/ /_/ / /_/ /  __/ /      \e[1;36m___/ /  __/ /__/ /_/ / /  / / /_/ /_/ / "
+    echo -e "\e[1;35m\____/\__, /_.___/\___/_/      \e[1;36m/____/\___/\___/\__,_/_/  /_/\__/\__, /  "
+    echo -e "\e[1;35m     /____/                                                    \e[1;36m/____/   \e[0m"
+    echo -e "\e[1;37m        AI Cybersecurity Log Analyst - \e[1;92mCommunity Edition\e[0m"
+    echo -e "\n"
+}
+
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
 
 # --- Main Execution Flow ---
@@ -479,6 +492,10 @@ while [[ "$#" -gt 0 ]]; do
     esac
     shift
 done
+
+if [ "$INTERACTIVE" -eq 1 ]; then
+    display_header
+fi
 
 load_config
 check_dependencies
