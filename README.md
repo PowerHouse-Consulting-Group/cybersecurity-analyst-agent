@@ -68,11 +68,24 @@ Or schedule via Cron:
 
 ## 💎 Upgrade to CyberSecurity Analyst PRO
 
-While the Community Version provides essential log analysis, our **PRO Version** is designed for Enterprise Defense, offering a real-time Terminal UI (TUI) Dashboard and active remediation capabilities.
+While the Community Version provides essential weekly log analysis, our **PRO Version** is designed for Enterprise Defense, offering a real-time Terminal UI (TUI) Dashboard, active mitigation, and multi-server fleet management.
 
 **PRO Features Include:**
 *   **[I] AI Threat Insight & OSINT:** Auto-enrich attacker IPs via Shodan & AbuseIPDB for deep context.
 *   **[T] Blast Radius Timeline:** Cross-correlate Nginx, Auth, and DB logs 5 mins before/after breaches to build an incident timeline.
+*   **[F] Active Fleet Remediation:** 1-click IP blocking across all Master/Node servers using CSF/UFW.
+*   **[M] MITRE ATT&CK Mapping:** Generate SOC2/PCI-DSS compliance reports instantly.
+
+### How to Activate PRO (Zero Data Egress / On-Premise)
+Our commercial model guarantees **Zero Data Egress**. The PRO binary runs entirely on your own infrastructure.
+
+1. **Purchase a License:** Select your node tier (1, 5, or 10 nodes) at [PowerHouse Consulting Group](https://powerhouseconsulting.group/infrastructure-security).
+2. **Receive Your Key:** Upon successful checkout via Stripe, our automated fulfillment system will email you your official `PRO-XXXX-XXXX-XXXX` License Key.
+3. **Upgrade Instantly:** From your existing Community installation, simply run:
+```bash
+sudo /opt/ai-soc/cybersecurity_analyst.sh --activate YOUR_LICENSE_KEY
+```
+*The script will validate your key with our backend, securely download the compiled PRO Go binary directly to your server, and set up the new systemd service automatically.*nt timeline.
 *   **[D] Active Deception & Tarpits:** Route attackers to endlessh honeypots instead of just dropping packets.
 *   **[R] MITRE ATT&CK Reporting:** Generate 1-click executive PDF/JSON reports for SOC2, PCI-DSS, and ISO27001 audits.
 *   **[S] Global Fleet Defense:** Sync firewall blocks across your entire server cluster instantly.
