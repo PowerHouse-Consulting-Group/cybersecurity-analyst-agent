@@ -81,39 +81,6 @@ load_config() {
     MODEL_API_URL="https://aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/global/publishers/google/models/${MODEL_ID}:streamGenerateContent"
 }
 
-check_dependencies() {
-    local missing_deps=0
-    
-    if ! command -v jq &> /dev/null; then
-        log_error "Critical dependency missing: 'jq'."
-        log_error "Please install it via your package manager (e.g., sudo apt install jq or sudo dnf install jq)."
-        missing_deps=1
-    fi
-    
-    if ! command -v curl &> /dev/null; then
-        log_error "Critical dependency missing: 'curl'."
-        log_error "Please install it via your package manager."
-        missing_deps=1
-    fi
-    
-    if [[ "$LLM_PROVIDER" == "gemini" ]] && ! command -v gcloud &> /dev/null; then
-        log_error "Critical dependency missing: 'gcloud' CLI."
-        log_error "You selected 'gemini' as the LLM_PROVIDER. This requires the Google Cloud CLI to be installed and authenticated on this server."
-        missing_deps=1
-    fi
-    
-    if [ "$INTERACTIVE" -eq 0 ] && [ ! -x "/usr/sbin/sendmail" ]; then
-        log_error "Critical dependency missing: '/usr/sbin/sendmail'."
-        log_error "Cron (non-interactive) mode requires a working Mail Transfer Agent (MTA) like Postfix or Exim to send email reports."
-        missing_deps=1
-    fi
-
-    if [ "$missing_deps" -eq 1 ]; then
-        log_error "Exiting due to missing dependencies."
-        exit 1
-    fi
-}
-
 # 2. Parse Server Logs
 parse_logs() {
     log_info "Starting weekly log analysis for date pattern: '${DATE_PATTERN}'"
@@ -430,47 +397,6 @@ handle_output() {
         
         log_info "Log analysis complete. Report sent to $YOUR_EMAIL."
     fi
-
-    if [ "$INTERACTIVE" -eq 1 ]; then
-        display_pro_upsell
-    fi
-}
-
-# --- PRO Features Upsell Dashboard ---
-display_pro_upsell() {
-    echo -e "\n\e[1;36m┌──────────────────────────────────────────────────────────────────────────┐\e[0m"
-    echo -e "\e[1;36m│\e[0m \e[1;37m🚀 UPGRADE TO CYBERSECURITY ANALYST PRO FOR ENTERPRISE DEFENSE\e[0m         \e[1;36m│\e[0m"
-    echo -e "\e[1;36m├──────────────────────────────────────────────────────────────────────────┤\e[0m"
-    echo -e "\e[1;36m│\e[0m \e[1;32m[COMING SOON]\e[0m \e[1;37mAI Threat Insight & OSINT Enrichment\e[0m                       \e[1;36m│\e[0m"
-    echo -e "\e[1;36m│\e[0m \e[0;90mAuto-enrich attacker IPs via Shodan & AbuseIPDB for deep context.        \e[1;36m│\e[0m"
-    echo -e "\e[1;36m│\e[0m                                                                          \e[1;36m│\e[0m"
-    echo -e "\e[1;36m│\e[0m \e[1;32m[COMING SOON]\e[0m \e[1;37mBlast Radius Timeline Correlation\e[0m                          \e[1;36m│\e[0m"
-    echo -e "\e[1;36m│\e[0m \e[0;90mCross-correlate Nginx, Auth, and DB logs 5 mins before/after breaches.   \e[1;36m│\e[0m"
-    echo -e "\e[1;36m│\e[0m                                                                          \e[1;36m│\e[0m"
-    echo -e "\e[1;36m│\e[0m \e[1;32m[COMING SOON]\e[0m \e[1;37mActive Deception & SSH Tarpitting\e[0m                          \e[1;36m│\e[0m"
-    echo -e "\e[1;36m│\e[0m \e[0;90mRoute attackers to endlessh honeypots instead of just dropping packets.  \e[1;36m│\e[0m"
-    echo -e "\e[1;36m│\e[0m                                                                          \e[1;36m│\e[0m"
-    echo -e "\e[1;36m│\e[0m \e[1;32m[COMING SOON]\e[0m \e[1;37mMITRE ATT&CK Mapping & Compliance PDFs\e[0m                    \e[1;36m│\e[0m"
-    echo -e "\e[1;36m│\e[0m \e[0;90m1-Click executive reports for SOC2, PCI-DSS, and ISO27001 audits.        \e[1;36m│\e[0m"
-    echo -e "\e[1;36m│\e[0m                                                                          \e[1;36m│\e[0m"
-    echo -e "\e[1;36m│\e[0m \e[1;32m[COMING SOON]\e[0m \e[1;37mCross-Server Global Fleet Defense\e[0m                         \e[1;36m│\e[0m"
-    echo -e "\e[1;36m│\e[0m \e[0;90mSync firewall blocks across your entire server cluster instantly.        \e[1;36m│\e[0m"
-    echo -e "\e[1;36m├──────────────────────────────────────────────────────────────────────────┤\e[0m"
-    echo -e "\e[1;36m│\e[0m \e[1;33m👉 GET PRO TODAY: https://powerhouseconsulting.group/infrastructure-security/\e[0m \e[1;36m│\e[0m"
-    echo -e "\e[1;36m└──────────────────────────────────────────────────────────────────────────┘\e[0m\n"
-}
-
-# --- Header Logo ---
-display_header() {
-    # Cyberpunk Color Scheme: Cyan (\e[1;36m) and Magenta (\e[1;35m)
-    echo -e "\e[1;36m   ______      __                 \e[1;35m_____                      _ __       "
-    echo -e "\e[1;36m  / ____/_  __/ /_  ___  _____   \e[1;35m/ ___/___  ________  ______(_) /___  __"
-    echo -e "\e[1;36m / /   / / / / __ \/ _ \/ ___/   \e[1;35m\__ \/ _ \/ ___/ / / / ___/ / __/ / / /"
-    echo -e "\e[1;35m/ /___/ /_/ / /_/ /  __/ /      \e[1;36m___/ /  __/ /__/ /_/ / /  / / /_/ /_/ / "
-    echo -e "\e[1;35m\____/\__, /_.___/\___/_/      \e[1;36m/____/\___/\___/\__,_/_/  /_/\__/\__, /  "
-    echo -e "\e[1;35m     /____/                                                    \e[1;36m/____/   \e[0m"
-    echo -e "\e[1;37m        AI Cybersecurity Log Analyst - \e[1;92mCommunity Edition\e[0m"
-    echo -e "\n"
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
@@ -488,27 +414,12 @@ touch "$LOCKFILE"
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         --interactive|-i) INTERACTIVE=1 ;;
-        --activate|--upgrade) 
-            if [ -z "$2" ]; then
-                log_error "Error: --activate requires a <LICENSE_KEY>"
-                exit 1
-            fi
-            LICENSE_KEY="$2"
-            log_info "Upgrade initiated. Contacting Powerhouse Distribution Server..."
-            curl -s "https://ptr.powerhouseconsulting.group/api/dist/install.sh" | sudo bash -s -- --key "$LICENSE_KEY"
-            exit 0
-            ;;
         *) log_error "Unknown parameter passed: $1"; exit 1 ;;
     esac
     shift
 done
 
-if [ "$INTERACTIVE" -eq 1 ]; then
-    display_header
-fi
-
 load_config
-check_dependencies
 parse_logs
 if analyze_with_ai; then
     process_remediation
