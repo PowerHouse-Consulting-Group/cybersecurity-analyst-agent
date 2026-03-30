@@ -38,3 +38,11 @@ SBF Center Unit #24-09,
 ACRA UEN 202108925N  
 
 📧 **Contact:** support (at) powerhouseconsulting.group
+
+## 🛡️ Security Safeguards & Zero Trust Automation
+
+This agent is built with **Zero Trust Automation** principles to ensure it cannot compromise your server's integrity:
+- **Explicit Permission Mandate:** The AI operates as an advisory tool. It proposes remediations as purely executable Bash scripts that *require* a human System Administrator's explicit confirmation before execution.
+- **Database Protection:** The AI is strictly forbidden from executing raw database queries or modifications (MySQL, MariaDB, PostgreSQL). All DB-related fixes are provided as manual text instructions.
+- **Core System Integrity:** The AI is restricted from proposing modifications to core OS files (e.g., `/etc/passwd`, `/etc/sudoers`) and blocked from using destructive commands (`rm -rf`, `truncate`).
+- **Safe Network Abstraction:** The agent relies on safe firewall wrappers (`csf`, `ufw`) and will never execute raw `iptables --flush` commands that could sever administrative access.
