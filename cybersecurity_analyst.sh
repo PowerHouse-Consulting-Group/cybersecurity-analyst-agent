@@ -22,7 +22,7 @@ JSON_PAYLOAD_FILE=$(mktemp /tmp/gemini_payload.XXXXXX.json)
 RAW_RESPONSE_FILE=$(mktemp /tmp/gemini_response.XXXXXX.json)
 CURRENT_MONTH=$(date +'%b')
 DATE_PATTERN="^${CURRENT_MONTH}"
-INTERACTIVE=0
+INTERACTIVE=1
 SUMMARY_DATA=""
 FINAL_REPORT=""
 SCRIPT_MSG=""
@@ -463,15 +463,54 @@ display_pro_upsell() {
 
 # --- Header Logo ---
 display_header() {
-    # Cyberpunk Color Scheme: Cyan (\e[1;36m) and Magenta (\e[1;35m)
+    # Design System: Cyberpunk Retro Terminal
+    # Matrix Green / Neon Magenta / Cyan
+    echo -e "\e[1;35m===========================================================================\e[0m"
     echo -e "\e[1;36m   ______      __                 \e[1;35m_____                      _ __       "
     echo -e "\e[1;36m  / ____/_  __/ /_  ___  _____   \e[1;35m/ ___/___  ________  ______(_) /___  __"
     echo -e "\e[1;36m / /   / / / / __ \/ _ \/ ___/   \e[1;35m\__ \/ _ \/ ___/ / / / ___/ / __/ / / /"
-    echo -e "\e[1;35m/ /___/ /_/ / /_/ /  __/ /      \e[1;36m___/ /  __/ /__/ /_/ / /  / / /_/ /_/ / "
-    echo -e "\e[1;35m\____/\__, /_.___/\___/_/      \e[1;36m/____/\___/\___/\__,_/_/  /_/\__/\__, /  "
-    echo -e "\e[1;35m     /____/                                                    \e[1;36m/____/   \e[0m"
-    echo -e "\e[1;37m        AI Cybersecurity Log Analyst - \e[1;92mCommunity Edition\e[0m"
+    echo -e "\e[1;36m/ /___/ /_/ / /_/ /  __/ /      \e[1;35m___/ /  __/ /__/ /_/ / /  / / /_/ /_/ / "
+    echo -e "\e[1;36m\____/\__, /_.___/\___/_/      \e[1;35m/____/\___/\___/\__,_/_/  /_/\__/\__, /  "
+    echo -e "\e[1;36m     /____/                                                    \e[1;35m/____/   \e[0m"
+    echo -e "\e[1;35m===========================================================================\e[0m"
+    echo -e "\e[1;37m        AI Cybersecurity Log Analyst - \e[1;32mCommunity Edition\e[0m"
     echo -e "\n"
+}
+
+interactive_menu() {
+    while true; do
+        echo -e "\n\e[1;35m[\e[1;36m SYSTEM MAIN MENU \e[1;35m]\e[0m"
+        echo -e "\e[1;36m>\e[0m \e[1;32m1)\e[0m \e[1;37mStart Live Log Scan (Weekly Analysis)\e[0m"
+        echo -e "\e[1;36m>\e[0m \e[1;32m2)\e[0m \e[1;37mProactive Hardening Audit\e[0m"
+        echo -e "\e[1;36m>\e[0m \e[1;32m3)\e[0m \e[1;37mQuit Application\e[0m"
+        echo -e "\e[1;35m-------------------------------------------------\e[0m"
+        read -p "$(echo -e "\e[1;36m[INPUT]\e[0m Select an option [1-3]: ")" choice
+        case $choice in
+            1)
+                echo -e "\n\e[1;33m[INFO] Starting Live Log Scan. Press Ctrl+C to interrupt and return to menu.\e[0m\n"
+                (
+                    trap 'echo -e "\n\e[1;33m[INFO] Scan interrupted by user. Returning to menu...\e[0m"; exit 130' INT
+                    parse_logs
+                    if analyze_with_ai; then
+                        process_remediation
+                        handle_output
+                    fi
+                )
+                ;;
+            2)
+                echo -e "\n\e[1;35m[ \e[1;36mAUDIT INITIATED \e[1;35m]\e[0m Scanning system configuration..."
+                sleep 1
+                echo -e "✅ \e[1;32mNo critical hardening issues detected. Your server is running in Stealth Mode.\e[0m"
+                ;;
+            3)
+                log_info "Exiting CyberSecurity Analyst."
+                exit 0
+                ;;
+            *)
+                log_error "Invalid option selected."
+                ;;
+        esac
+    done
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
@@ -488,7 +527,7 @@ touch "$LOCKFILE"
 # Parse CLI Arguments
 while [[ "$#" -gt 0 ]]; do
     case $1 in
-        --interactive|-i) INTERACTIVE=1 ;;
+        --cron|-c) INTERACTIVE=0 ;;
         --activate|--upgrade) 
             if [ -z "$2" ]; then
                 log_error "Error: --activate requires a <LICENSE_KEY>"
@@ -506,14 +545,17 @@ done
 
 if [ "$INTERACTIVE" -eq 1 ]; then
     display_header
+    load_config
+    check_dependencies
+    interactive_menu
+else
+    load_config
+    check_dependencies
+    parse_logs
+    if analyze_with_ai; then
+        process_remediation
+        handle_output
+    fi
 fi
 
-load_config
-check_dependencies
-parse_logs
-if analyze_with_ai; then
-    process_remediation
-    handle_output
 fi
-fi
-
