@@ -50,5 +50,8 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
+          generate_release_notes: true
             *.deb
+          generate_release_notes: true
             *.rpm
+          generate_release_notes: true
