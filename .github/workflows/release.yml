@@ -30,7 +30,7 @@ jobs:
         run: |
           fpm -s dir -t deb \
             -n ai-cybersecurity-analyst \
-            -v "\${GITHUB_REF_NAME#v}" \
+            -v "${GITHUB_REF_NAME#v}" \
             --architecture all \
             --maintainer "support@powerhouseconsulting.group" \
             --description "Autonomous AI Cybersecurity Log Analyst" \
@@ -40,7 +40,7 @@ jobs:
         run: |
           fpm -s dir -t rpm \
             -n ai-cybersecurity-analyst \
-            -v "\${GITHUB_REF_NAME#v}" \
+            -v "${GITHUB_REF_NAME#v}" \
             --architecture all \
             --maintainer "support@powerhouseconsulting.group" \
             --description "Autonomous AI Cybersecurity Log Analyst" \
