@@ -32,6 +32,15 @@ if [ ! -f "$INSTALL_DIR/.env" ]; then
     echo "Created default .env file at $INSTALL_DIR/.env"
 fi
 
+echo "Creating system-wide terminal shortcut: 'csa'..."
+sudo tee /usr/local/bin/csa > /dev/null << 'EOF'
+#!/bin/bash
+# Cybersecurity Analyst CLI Shortcut
+exec /opt/ai-soc/cybersecurity_analyst.sh "$@"
+EOF
+
+sudo chmod +x /usr/local/bin/csa
+
 echo "Installation complete!"
 echo "Please configure your API keys and paths in $INSTALL_DIR/.env"
-echo "You can run the script manually: sudo $INSTALL_DIR/cybersecurity_analyst.sh --interactive"
+echo "You can now run the tool using the quick CLI command: csa"

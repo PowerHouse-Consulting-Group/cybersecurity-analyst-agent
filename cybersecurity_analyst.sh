@@ -64,13 +64,19 @@ load_config() {
     set +a
 
     # Validate Required Variables
-    local REQUIRED_VARS=("YOUR_EMAIL" "PROJECT_ID" "MODEL_ID")
+    local REQUIRED_VARS=("YOUR_EMAIL" "MODEL_ID")
     for VAR in "${REQUIRED_VARS[@]}"; do
         if [ -z "${!VAR}" ]; then
             log_error "Missing required configuration variable: $VAR"
             exit 1
         fi
     done
+
+    # Ensure authentication for Gemini is set up via either API Key or GCP Project ID
+    if [[ "$LLM_PROVIDER" == "gemini" ]] && [ -z "$GEMINI_API_KEY" ] && [ -z "$PROJECT_ID" ]; then
+        log_error "To use Gemini, you must configure either GEMINI_API_KEY for developer access, or PROJECT_ID for GCP Vertex AI access."
+        exit 1
+    fi
 
     # Setup Defaults
     KEYWORDS="${KEYWORDS:-error|warning|denied|blocked|failed|crashed|critical}"
@@ -96,9 +102,9 @@ check_dependencies() {
         missing_deps=1
     fi
     
-    if [[ "$LLM_PROVIDER" == "gemini" ]] && ! command -v gcloud &> /dev/null; then
+    if [[ "$LLM_PROVIDER" == "gemini" ]] && [ -z "$GEMINI_API_KEY" ] && ! command -v gcloud &> /dev/null; then
         log_error "Critical dependency missing: 'gcloud' CLI."
-        log_error "You selected 'gemini' as the LLM_PROVIDER. This requires the Google Cloud CLI to be installed and authenticated on this server."
+        log_error "You selected 'gemini' as the LLM_PROVIDER but did not configure GEMINI_API_KEY. This requires the Google Cloud CLI (gcloud) to be installed and authenticated on this server for Vertex AI."
         missing_deps=1
     fi
     
@@ -272,7 +278,9 @@ EOP
 
     case "$LLM_PROVIDER" in
         "gemini")
-            cat <<EOF > "$JSON_PAYLOAD_FILE"
+            if [ -n "$GEMINI_API_KEY" ]; then
+                # Standard developer Generative Language API
+                cat <<EOF > "$JSON_PAYLOAD_FILE"
 {
   "contents": [{
     "role": "user",
@@ -280,8 +288,25 @@ EOP
   }]
 }
 EOF
-            curl -s -X POST -H "Authorization: Bearer $(gcloud auth print-access-token 2>/dev/null)" -H "Content-Type: application/json" "https://aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/global/publishers/google/models/${MODEL_ID}:streamGenerateContent" -d @"$JSON_PAYLOAD_FILE" > "$RAW_RESPONSE_FILE"
-            FINAL_REPORT=$(jq -j '.[].candidates[0].content.parts[0].text' "$RAW_RESPONSE_FILE" 2>/dev/null)
+                curl -s -X POST -H "Content-Type: application/json" \
+                    "https://generativelanguage.googleapis.com/v1beta/models/${MODEL_ID}:generateContent?key=${GEMINI_API_KEY}" \
+                    -d @"$JSON_PAYLOAD_FILE" > "$RAW_RESPONSE_FILE"
+                FINAL_REPORT=$(jq -j '.candidates[0].content.parts[0].text' "$RAW_RESPONSE_FILE" 2>/dev/null)
+            else
+                # Fallback to GCP Vertex AI API
+                cat <<EOF > "$JSON_PAYLOAD_FILE"
+{
+  "contents": [{
+    "role": "user",
+    "parts": [{ "text": ${JSON_TEXT_CONTENT} }]
+  }]
+}
+EOF
+                curl -s -X POST -H "Authorization: Bearer $(gcloud auth print-access-token 2>/dev/null)" -H "Content-Type: application/json" \
+                    "https://aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/global/publishers/google/models/${MODEL_ID}:generateContent" \
+                    -d @"$JSON_PAYLOAD_FILE" > "$RAW_RESPONSE_FILE"
+                FINAL_REPORT=$(jq -j '.candidates[0].content.parts[0].text' "$RAW_RESPONSE_FILE" 2>/dev/null)
+            fi
             ;;
 
         "openai"|"local")
