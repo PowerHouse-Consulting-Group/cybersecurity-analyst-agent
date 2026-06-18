@@ -467,19 +467,19 @@ display_pro_upsell() {
     echo -e "\n\e[1;36m┌──────────────────────────────────────────────────────────────────────────┐\e[0m"
     echo -e "\e[1;36m│\e[0m \e[1;37m🚀 UPGRADE TO CYBERSECURITY ANALYST PRO FOR ENTERPRISE DEFENSE\e[0m         \e[1;36m│\e[0m"
     echo -e "\e[1;36m├──────────────────────────────────────────────────────────────────────────┤\e[0m"
-    echo -e "\e[1;36m│\e[0m \e[1;32m[COMING SOON]\e[0m \e[1;37mAI Threat Insight & OSINT Enrichment\e[0m                       \e[1;36m│\e[0m"
+    echo -e "\e[1;36m│\e[0m \e[1;32m[PRO FEATURE]\e[0m \e[1;37mAI Threat Insight & OSINT Enrichment\e[0m                       \e[1;36m│\e[0m"
     echo -e "\e[1;36m│\e[0m \e[0;90mAuto-enrich attacker IPs via Shodan & AbuseIPDB for deep context.        \e[1;36m│\e[0m"
     echo -e "\e[1;36m│\e[0m                                                                          \e[1;36m│\e[0m"
-    echo -e "\e[1;36m│\e[0m \e[1;32m[COMING SOON]\e[0m \e[1;37mBlast Radius Timeline Correlation\e[0m                          \e[1;36m│\e[0m"
+    echo -e "\e[1;36m│\e[0m \e[1;32m[PRO FEATURE]\e[0m \e[1;37mBlast Radius Timeline Correlation\e[0m                          \e[1;36m│\e[0m"
     echo -e "\e[1;36m│\e[0m \e[0;90mCross-correlate Nginx, Auth, and DB logs 5 mins before/after breaches.   \e[1;36m│\e[0m"
     echo -e "\e[1;36m│\e[0m                                                                          \e[1;36m│\e[0m"
-    echo -e "\e[1;36m│\e[0m \e[1;32m[COMING SOON]\e[0m \e[1;37mActive Deception & SSH Tarpitting\e[0m                          \e[1;36m│\e[0m"
+    echo -e "\e[1;36m│\e[0m \e[1;32m[PRO FEATURE]\e[0m \e[1;37mActive Deception & SSH Tarpitting\e[0m                          \e[1;36m│\e[0m"
     echo -e "\e[1;36m│\e[0m \e[0;90mRoute attackers to endlessh honeypots instead of just dropping packets.  \e[1;36m│\e[0m"
     echo -e "\e[1;36m│\e[0m                                                                          \e[1;36m│\e[0m"
-    echo -e "\e[1;36m│\e[0m \e[1;32m[COMING SOON]\e[0m \e[1;37mMITRE ATT&CK Mapping & Compliance PDFs\e[0m                    \e[1;36m│\e[0m"
+    echo -e "\e[1;36m│\e[0m \e[1;32m[PRO FEATURE]\e[0m \e[1;37mMITRE ATT&CK Mapping & Compliance PDFs\e[0m                    \e[1;36m│\e[0m"
     echo -e "\e[1;36m│\e[0m \e[0;90m1-Click executive reports for SOC2, PCI-DSS, and ISO27001 audits.        \e[1;36m│\e[0m"
     echo -e "\e[1;36m│\e[0m                                                                          \e[1;36m│\e[0m"
-    echo -e "\e[1;36m│\e[0m \e[1;32m[COMING SOON]\e[0m \e[1;37mCross-Server Global Fleet Defense\e[0m                         \e[1;36m│\e[0m"
+    echo -e "\e[1;36m│\e[0m \e[1;32m[PRO FEATURE]\e[0m \e[1;37mCross-Server Global Fleet Defense\e[0m                         \e[1;36m│\e[0m"
     echo -e "\e[1;36m│\e[0m \e[0;90mSync firewall blocks across your entire server cluster instantly.        \e[1;36m│\e[0m"
     echo -e "\e[1;36m├──────────────────────────────────────────────────────────────────────────┤\e[0m"
     echo -e "\e[1;36m│\e[0m \e[1;33m👉 GET PRO TODAY: https://powerhouseconsulting.group/infrastructure-security/\e[0m \e[1;36m│\e[0m"
@@ -507,9 +507,10 @@ interactive_menu() {
         echo -e "\n\e[1;35m[\e[1;36m SYSTEM MAIN MENU \e[1;35m]\e[0m"
         echo -e "\e[1;36m>\e[0m \e[1;32m1)\e[0m \e[1;37mStart Live Log Scan (Weekly Analysis)\e[0m"
         echo -e "\e[1;36m>\e[0m \e[1;32m2)\e[0m \e[1;37mProactive Hardening Audit\e[0m"
-        echo -e "\e[1;36m>\e[0m \e[1;32m3)\e[0m \e[1;37mQuit Application\e[0m"
+        echo -e "\e[1;36m>\e[0m \e[1;35m3)\e[0m \e[1;33m🔥 Upgrade to PRO Version (Activate License Key)\e[0m"
+        echo -e "\e[1;36m>\e[0m \e[1;32m4)\e[0m \e[1;37mQuit Application\e[0m"
         echo -e "\e[1;35m-------------------------------------------------\e[0m"
-        read -p "$(echo -e "\e[1;36m[INPUT]\e[0m Select an option [1-3]: ")" choice
+        read -p "$(echo -e "\e[1;36m[INPUT]\e[0m Select an option [1-4]: ")" choice
         case $choice in
             1)
                 echo -e "\n\e[1;33m[INFO] Starting Live Log Scan. Press Ctrl+C to interrupt and return to menu.\e[0m\n"
@@ -528,6 +529,26 @@ interactive_menu() {
                 echo -e "✅ \e[1;32mNo critical hardening issues detected. Your server is running in Stealth Mode.\e[0m"
                 ;;
             3)
+                echo -e "\n\e[1;35m===========================================================================\e[0m"
+                echo -e "\e[1;37m🌟 UPGRADE TO CYBERSECURITY ANALYST PRO — ENTERPRISE DEFENSE\e[0m"
+                echo -e "\e[1;35m===========================================================================\e[0m"
+                echo -e "Our Go-based on-premise PRO dashboard runs directly in your SSH terminal and"
+                echo -e "features real-time log scanning, asynchronous AI deep insight context, Slack/Discord"
+                echo -e "notifications, and 1-click active IP blocking (CSF/UFW).\n"
+                echo -e "How to Upgrade:"
+                echo -e "1. Purchase a subscription at: \e[1;33mhttps://powerhouseconsulting.group/infrastructure-security/\e[0m"
+                echo -e "2. Copy your PRO-XXXX-XXXX-XXXX license key sent to your email."
+                echo -e "3. Enter your license key below to instantly upgrade and activate PRO.\n"
+                read -p "$(echo -e "\e[1;36m[INPUT]\e[0m Enter your License Key (or press Enter to cancel): ")" key
+                if [ -n "$key" ]; then
+                    echo -e "\n\e[1;32m[INFO] Contacting PowerHouse validation server...\e[0m"
+                    curl -s "https://ptr.powerhouseconsulting.group/api/dist/install.sh" | sudo bash -s -- --key "$key"
+                    exit 0
+                else
+                    echo -e "\n\e[1;33m[INFO] Activation cancelled. Returning to menu...\e[0m"
+                fi
+                ;;
+            4)
                 log_info "Exiting CyberSecurity Analyst."
                 exit 0
                 ;;
@@ -553,6 +574,7 @@ touch "$LOCKFILE"
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         --cron|-c) INTERACTIVE=0 ;;
+        --interactive|-i) INTERACTIVE=1 ;;
         --activate|--upgrade) 
             if [ -z "$2" ]; then
                 log_error "Error: --activate requires a <LICENSE_KEY>"
