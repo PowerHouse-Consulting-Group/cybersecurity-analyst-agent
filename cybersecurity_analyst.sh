@@ -17,7 +17,7 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="${SCRIPT_DIR}/.env"
 LOCKFILE="/tmp/daily_log_analyst.lock"
-VERSION="v1.1.3"
+VERSION="v1.1.4"
 umask 077
 JSON_PAYLOAD_FILE=$(mktemp /tmp/gemini_payload.XXXXXX.json)
 RAW_RESPONSE_FILE=$(mktemp /tmp/gemini_response.XXXXXX.json)
@@ -644,8 +644,18 @@ interactive_menu() {
                 read -p "$(echo -e "\e[1;36m[INPUT]\e[0m Enter your License Key (or press Enter to cancel): ")" key
                 if [ -n "$key" ]; then
                     echo -e "\n\e[1;32m[INFO] Contacting PowerHouse validation server...\e[0m"
-                    curl -s "https://ptr.powerhouseconsulting.group/api/dist/install.sh" | sudo bash -s -- --key "$key"
-                    exit 0
+                    if curl -fsSL --connect-timeout 10 --max-time 15 "https://ptr.powerhouseconsulting.group/api/dist/install.sh" -o /tmp/csa_pro_install.sh 2>/dev/null; then
+                        sudo bash /tmp/csa_pro_install.sh -- --key "$key"
+                        rm -f /tmp/csa_pro_install.sh
+                        exit 0
+                    else
+                        echo -e "\n\e[1;31m[ERROR] Could not reach the PowerHouse validation server.\e[0m"
+                        echo -e "This may be due to network restrictions or the server being temporarily unavailable."
+                        echo -e "Please verify your license key and try again, or contact support@powerhouseconsulting.group"
+                        echo -e "\nPress Enter to return to the menu..."
+                        read
+                        rm -f /tmp/csa_pro_install.sh
+                    fi
                 else
                     echo -e "\n\e[1;33m[INFO] Activation cancelled. Returning to menu...\e[0m"
                 fi
@@ -711,8 +721,16 @@ while [[ "$#" -gt 0 ]]; do
             fi
             LICENSE_KEY="$2"
             log_info "Upgrade initiated. Contacting Powerhouse Distribution Server..."
-            curl -s "https://ptr.powerhouseconsulting.group/api/dist/install.sh" | sudo bash -s -- --key "$LICENSE_KEY"
-            exit 0
+            if curl -fsSL --connect-timeout 10 --max-time 15 "https://ptr.powerhouseconsulting.group/api/dist/install.sh" -o /tmp/csa_pro_install.sh 2>/dev/null; then
+                sudo bash /tmp/csa_pro_install.sh -- --key "$LICENSE_KEY"
+                rm -f /tmp/csa_pro_install.sh
+                exit 0
+            else
+                log_error "Could not reach the PowerHouse validation server (connection timeout or server unreachable)."
+                log_error "Please verify your license key and network connectivity, or contact support@powerhouseconsulting.group"
+                rm -f /tmp/csa_pro_install.sh
+                exit 1
+            fi
             ;;
         *) log_error "Unknown parameter passed: $1"; exit 1 ;;
     esac
