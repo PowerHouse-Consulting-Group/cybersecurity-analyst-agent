@@ -563,9 +563,72 @@ interactive_menu() {
                 )
                 ;;
             2)
-                echo -e "\n\e[1;35m[ \e[1;36mAUDIT INITIATED \e[1;35m]\e[0m Scanning system configuration..."
-                sleep 1
-                echo -e "✅ \e[1;32mNo critical hardening issues detected. Your server is running in Stealth Mode.\e[0m"
+                echo -e "\n\e[1;35m[ \e[1;36mAUDIT INITIATED \e[1;35m]\e[0m Scanning system configuration...\n"
+                
+                local issues=0
+                
+                # Check SSH config
+                echo -ne "  SSH root login disabled... "
+                if grep -qE "^PermitRootLogin\s+no" /etc/ssh/sshd_config 2>/dev/null; then
+                    echo -e "\e[1;32m✓\e[0m"
+                else
+                    echo -e "\e[1;31m✗\e[0m (root login allowed)"
+                    ((issues++))
+                fi
+                
+                echo -ne "  SSH password auth disabled... "
+                if grep -qE "^PasswordAuthentication\s+no" /etc/ssh/sshd_config 2>/dev/null; then
+                    echo -e "\e[1;32m✓\e[0m"
+                else
+                    echo -e "\e[1;31m✗\e[0m (password auth enabled)"
+                    ((issues++))
+                fi
+                
+                # Check firewall
+                echo -ne "  Firewall active... "
+                if command -v ufw &>/dev/null && ufw status | grep -q "Status: active" 2>/dev/null; then
+                    echo -e "\e[1;32m✓\e[0m (UFW)"
+                elif command -v csf &>/dev/null && csf -l &>/dev/null 2>&1; then
+                    echo -e "\e[1;32m✓\e[0m (CSF)"
+                elif command -v iptables &>/dev/null && iptables -L -n | grep -q "DROP\|REJECT" 2>/dev/null; then
+                    echo -e "\e[1;32m✓\e[0m (iptables)"
+                else
+                    echo -e "\e[1;31m✗\e[0m (no active firewall detected)"
+                    ((issues++))
+                fi
+                
+                # Check fail2ban
+                echo -ne "  Fail2ban active... "
+                if systemctl is-active fail2ban &>/dev/null 2>&1; then
+                    echo -e "\e[1;32m✓\e[0m"
+                else
+                    echo -e "\e[1;31m✗\e[0m (not running)"
+                    ((issues++))
+                fi
+                
+                # Check unattended-upgrades
+                echo -ne "  Unattended security updates... "
+                if systemctl is-active unattended-upgrades &>/dev/null 2>&1 || systemctl is-active dnf-automatic &>/dev/null 2>&1; then
+                    echo -e "\e[1;32m✓\e[0m"
+                else
+                    echo -e "\e[1;33m!\e[0m (not installed — recommended)"
+                fi
+                
+                # Check open ports
+                echo -ne "  Open ports audit... "
+                local open_ports=$(ss -tlnp 2>/dev/null | awk 'NR>1{print $4}' | sed 's/.*://' | sort -nu | tr '\n' ' ')
+                if [ -n "$open_ports" ]; then
+                    echo -e "\e[1;33m$open_ports\e[0m"
+                else
+                    echo -e "\e[1;32m✓\e[0m (minimal exposure)"
+                fi
+                
+                echo ""
+                if [ "$issues" -eq 0 ]; then
+                    echo -e "\e[1;32m✅ No critical hardening issues detected. Your server is running in Stealth Mode.\e[0m"
+                else
+                    echo -e "\e[1;33m⚠️  $issues hardening issue(s) found. Review the ✗ items above.\e[0m"
+                fi
                 ;;
             3)
                 echo -e "\n\e[1;35m===========================================================================\e[0m"
