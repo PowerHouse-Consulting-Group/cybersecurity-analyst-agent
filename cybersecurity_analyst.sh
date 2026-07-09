@@ -54,8 +54,25 @@ scrub_pii() {
 # 1. Configuration Loader
 load_config() {
     if [ ! -f "$ENV_FILE" ]; then
-        log_error "Configuration file not found at $ENV_FILE"
-        log_error "Please copy .env.example to .env and configure your variables."
+        # First run: copy example and guide
+        echo -e "\n\e[1;33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
+        echo -e "\e[1;37m  ⚙️  FIRST-TIME SETUP — Configuration Required\e[0m"
+        echo -e "\e[1;33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
+        echo -e "\n\e[1;36m[INFO]\e[0m No configuration file found at \e[1;33m$ENV_FILE\e[0m"
+        echo -e "\e[1;36m[INFO]\e[0m Creating default .env from template..."
+        cp "${SCRIPT_DIR}/.env.example" "$ENV_FILE"
+        echo -e "\e[1;32m[OK]\e[0m Created: \e[1;33m$ENV_FILE\e[0m"
+        echo -e "\n\e[1;37mYou MUST configure the following before running scans:\e[0m"
+        echo -e "  \e[1;32m1.\e[0m \e[1;37mYOUR_EMAIL\e[0m        — Where reports are sent"
+        echo -e "  \e[1;32m2.\e[0m \e[1;37mLLM_PROVIDER\e[0m      — AI provider (gemini, openai, claude, local)"
+        echo -e "  \e[1;32m3.\e[0m \e[1;37mMODEL_ID\e[0m          — AI model to use"
+        echo -e "  \e[1;32m4.\e[0m \e[1;37mAPI Key\e[0m           — Your provider's API key"
+        echo -e "  \e[1;32m5.\e[0m \e[1;37mLog Paths\e[0m         — Paths to your server logs"
+        echo -e "\n\e[1;36mEdit the file:\e[0m"
+        echo -e "  \e[1;33mnano $ENV_FILE\e[0m"
+        echo -e "\n\e[1;36mThen re-run:\e[0m"
+        echo -e "  \e[1;33mcsa\e[0m"
+        echo -e "\e[1;33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m\n"
         exit 1
     fi
 
@@ -65,16 +82,37 @@ load_config() {
 
     # Validate Required Variables
     local REQUIRED_VARS=("YOUR_EMAIL" "MODEL_ID")
+    local MISSING_VARS=()
     for VAR in "${REQUIRED_VARS[@]}"; do
         if [ -z "${!VAR}" ]; then
-            log_error "Missing required configuration variable: $VAR"
-            exit 1
+            MISSING_VARS+=("$VAR")
         fi
     done
 
+    if [ ${#MISSING_VARS[@]} -gt 0 ]; then
+        echo -e "\n\e[1;31m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
+        echo -e "\e[1;37m  ⚠️  CONFIGURATION INCOMPLETE\e[0m"
+        echo -e "\e[1;31m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
+        echo -e "\n\e[1;31m[ERROR]\e[0m The following required variables are missing or empty:"
+        for VAR in "${MISSING_VARS[@]}"; do
+            echo -e "  \e[1;31m✗\e[0m \e[1;37m$VAR\e[0m"
+        done
+        echo -e "\n\e[1;36mEdit:\e[0m \e[1;33mnano $ENV_FILE\e[0m"
+        echo -e "\e[1;36mRe-run:\e[0m \e[1;33mcsa\e[0m"
+        echo -e "\e[1;31m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m\n"
+        exit 1
+    fi
+
     # Ensure authentication for Gemini is set up via either API Key or GCP Project ID
     if [[ "$LLM_PROVIDER" == "gemini" ]] && [ -z "$GEMINI_API_KEY" ] && [ -z "$PROJECT_ID" ]; then
-        log_error "To use Gemini, you must configure either GEMINI_API_KEY for developer access, or PROJECT_ID for GCP Vertex AI access."
+        echo -e "\n\e[1;31m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
+        echo -e "\e[1;37m  ⚠️  MISSING GEMINI CREDENTIALS\e[0m"
+        echo -e "\e[1;31m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
+        echo -e "\n\e[1;31m[ERROR]\e[0m LLM_PROVIDER is set to 'gemini' but no credentials found."
+        echo -e "Configure \e[1;37mGEMINI_API_KEY\e[0m (developer) or \e[1;37mPROJECT_ID\e[0m (GCP Vertex AI)."
+        echo -e "\n\e[1;36mEdit:\e[0m \e[1;33mnano $ENV_FILE\e[0m"
+        echo -e "\e[1;36mRe-run:\e[0m \e[1;33mcsa\e[0m"
+        echo -e "\e[1;31m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m\n"
         exit 1
     fi
 
@@ -83,9 +121,9 @@ load_config() {
     TOP_N="${TOP_N:-20}"
     MAX_LINE_LENGTH="${MAX_LINE_LENGTH:-500}"
     REMEDIATION_DIR="${REMEDIATION_DIR:-/opt/ai-soc/remediation_scripts}"
-    NOISE_FILTER="${NOISE_FILTER:-favicon\.ico|robots\.txt|apple-touch-icon|AH00124|AH01071|File does not exist: /var/www/html}"
+    NOISE_FILTER="${NOISE_FILTER:-favicon\\.ico|robots\\.txt|apple-touch-icon|AH00124|AH01071|File does not exist: /var/www/html}"
     MODEL_API_URL="https://aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/global/publishers/google/models/${MODEL_ID}:streamGenerateContent"
-}
+    }
 
 check_dependencies() {
     local missing_deps=0
@@ -375,7 +413,7 @@ process_remediation() {
         log_info "Remediation script generated at: $REMEDIATION_FILE"
     else
         rm -f "$REMEDIATION_FILE"
-        REMEDIATION_FILE=""
+    REMEDIATION_FILE=""
     fi
 }
 
@@ -482,7 +520,7 @@ display_pro_upsell() {
     echo -e "\e[1;36m│\e[0m \e[1;32m[PRO FEATURE]\e[0m \e[1;37mCross-Server Global Fleet Defense\e[0m                         \e[1;36m│\e[0m"
     echo -e "\e[1;36m│\e[0m \e[0;90mSync firewall blocks across your entire server cluster instantly.        \e[1;36m│\e[0m"
     echo -e "\e[1;36m├──────────────────────────────────────────────────────────────────────────┤\e[0m"
-    echo -e "\e[1;36m│\e[0m \e[1;33m👉 GET PRO TODAY: https://powerhouseconsulting.group/infrastructure-security/\e[0m \e[1;36m│\e[0m"
+    echo -e "\e[1;35m│\e[0m \e[1;33m👉 GET PRO TODAY: https://powerhouseconsulting.group/cybersecurity-analyst/#pricing\e[0m \e[1;35m│\e[0m"
     echo -e "\e[1;36m└──────────────────────────────────────────────────────────────────────────┘\e[0m\n"
 }
 
@@ -536,7 +574,7 @@ interactive_menu() {
                 echo -e "features real-time log scanning, asynchronous AI deep insight context, Slack/Discord"
                 echo -e "notifications, and 1-click active IP blocking (CSF/UFW).\n"
                 echo -e "How to Upgrade:"
-                echo -e "1. Purchase a subscription at: \e[1;33mhttps://powerhouseconsulting.group/infrastructure-security/\e[0m"
+                echo -e "1. Purchase a subscription at: \e[1;33mhttps://powerhouseconsulting.group/cybersecurity-analyst/#pricing\e[0m"
                 echo -e "2. Copy your PRO-XXXX-XXXX-XXXX license key sent to your email."
                 echo -e "3. Enter your license key below to instantly upgrade and activate PRO.\n"
                 read -p "$(echo -e "\e[1;36m[INPUT]\e[0m Enter your License Key (or press Enter to cancel): ")" key
@@ -575,6 +613,33 @@ while [[ "$#" -gt 0 ]]; do
     case $1 in
         --cron|-c) INTERACTIVE=0 ;;
         --interactive|-i) INTERACTIVE=1 ;;
+        --trial)
+            log_info "Initiating CyberSecurity Analyst PRO 14-Day Free Trial..."
+            echo -e "\n\033[1;33m======================================================================\033[0m"
+            echo -e "         \033[1;32m🛡️  CyberSecurity Analyst PRO - 14-Day Free Trial  🛡️\033[0m"
+            echo -e "\033[1;33m======================================================================\033[0m"
+            echo -e "Unlock the Go-compiled master daemon, visual Terminal UI, Slack/Telegram"
+            echo -e "alerts, and 1-click active firewall blocking."
+            echo -e "No commitments. Cancel anytime during the trial. Stripe handles secure billing.\n"
+            echo -e "\033[1;36mSecure Stripe Trial Link:\033[0m https://buy.stripe.com/00wdRa3mqesC9Z0gWG0co03"
+            echo -e "\033[1;33m======================================================================\033[0m\n"
+            
+            # Attempt to open browser if xdg-open/open is available
+            if command -v xdg-open &>/dev/null; then
+                xdg-open "https://buy.stripe.com/00wdRa3mqesC9Z0gWG0co03" &>/dev/null
+                log_info "Opening Stripe Secure Checkout in your default browser..."
+            elif command -v open &>/dev/null; then
+                open "https://buy.stripe.com/00wdRa3mqesC9Z0gWG0co03" &>/dev/null
+                log_info "Opening Stripe Secure Checkout in your default browser..."
+            else
+                log_info "Please copy-paste the secure Stripe Link above to start your trial."
+            fi
+            
+            echo -e "\nAfter starting your trial, you will receive your PRO License Key via email."
+            echo -e "Activate your node instantly with:"
+            echo -e "  \033[1;32mcsa --activate <YOUR_LICENSE_KEY>\033[0m\n"
+            exit 0
+            ;;
         --activate|--upgrade) 
             if [ -z "$2" ]; then
                 log_error "Error: --activate requires a <LICENSE_KEY>"
