@@ -17,7 +17,7 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="${SCRIPT_DIR}/.env"
 LOCKFILE="/tmp/daily_log_analyst.lock"
-VERSION="v1.1.5"
+VERSION="v1.1.6"
 umask 077
 JSON_PAYLOAD_FILE=$(mktemp /tmp/gemini_payload.XXXXXX.json)
 RAW_RESPONSE_FILE=$(mktemp /tmp/gemini_response.XXXXXX.json)
@@ -577,6 +577,7 @@ interactive_menu() {
     while true; do
         echo -e "\n\e[1;35m[\e[1;36m SYSTEM MAIN MENU \e[1;35m]\e[0m"
         echo -e "\e[1;36m>\e[0m \e[1;32m1)\e[0m \e[1;37mStart Live Log Scan\e[0m"
+        echo -e "   \e[0;90mTime ranges: 24h | 3d | 7d | 14d | Current month\e[0m"
         echo -e "\e[1;36m>\e[0m \e[1;32m2)\e[0m \e[1;37mProactive Hardening Audit\e[0m"
         echo -e "\e[1;36m>\e[0m \e[1;35m3)\e[0m \e[1;33m🔥 Upgrade to PRO Version (Activate License Key)\e[0m"
         echo -e "\e[1;36m>\e[0m \e[1;32m4)\e[0m \e[1;37mQuit Application\e[0m"
@@ -713,7 +714,10 @@ interactive_menu() {
                 fi
                 ;;
             4)
-                log_info "Exiting CyberSecurity Analyst."
+                echo -e "\n\e[1;32m[INFO]\e[0m Thank you for using CyberSecurity Analyst Community Edition.\n"
+                echo -e "\e[1;33m      ⚡ Upgrade to PRO for real-time monitoring, fleet management,\e[0m"
+                echo -e "\e[1;33m         and 1-click active blocking.\e[0m"
+                echo -e "\e[1;36m      → https://powerhouseconsulting.group/cybersecurity-analyst/#pricing\e[0m\n"
                 exit 0
                 ;;
             *)
