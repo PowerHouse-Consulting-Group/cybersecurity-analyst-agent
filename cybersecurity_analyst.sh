@@ -17,13 +17,14 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="${SCRIPT_DIR}/.env"
 LOCKFILE="/tmp/daily_log_analyst.lock"
-VERSION="v1.1.6"
+VERSION="v1.1.7"
 umask 077
 JSON_PAYLOAD_FILE=$(mktemp /tmp/gemini_payload.XXXXXX.json)
 RAW_RESPONSE_FILE=$(mktemp /tmp/gemini_response.XXXXXX.json)
 CURRENT_MONTH=$(date +'%b')
 DATE_PATTERN="^${CURRENT_MONTH}"
 INTERACTIVE=1
+CONFIG_VALID=true
 SUMMARY_DATA=""
 FINAL_REPORT=""
 SCRIPT_MSG=""
@@ -54,8 +55,10 @@ scrub_pii() {
 
 # 1. Configuration Loader
 load_config() {
+    CONFIG_VALID=true  # optimistic default
+
     if [ ! -f "$ENV_FILE" ]; then
-        # First run: copy example and guide
+        # First run: copy example and guide — must exit, no .env to source
         echo -e "\n\e[1;33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
         echo -e "\e[1;37m  ⚙️  FIRST-TIME SETUP — Configuration Required\e[0m"
         echo -e "\e[1;33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
@@ -82,53 +85,22 @@ load_config() {
     source "$ENV_FILE"
     set +a
 
-    # Sentinel: block if user hasn't explicitly set CONFIGURED=true
+    # Sentinel: flag as unconfigured if user hasn't set CONFIGURED=true
     if [ "$CONFIGURED" != "true" ]; then
-        echo -e "\n\e[1;31m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
-        echo -e "\e[1;37m  ⚠️  .env NOT CONFIGURED\e[0m"
-        echo -e "\e[1;31m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
-        echo -e "\n\e[1;31m[ERROR]\e[0m This is a default .env file with placeholder values."
-        echo -e "You must edit it and set \e[1;37mCONFIGURED=true\e[0m at the top before running scans."
-        echo -e "\n\e[1;36mEdit:\e[0m \e[1;33mnano $ENV_FILE\e[0m"
-        echo -e "\e[1;36mRe-run:\e[0m \e[1;33mcsa\e[0m"
-        echo -e "\e[1;31m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m\n"
-        exit 1
+        CONFIG_VALID=false
     fi
 
     # Validate Required Variables
     local REQUIRED_VARS=("YOUR_EMAIL" "MODEL_ID")
-    local MISSING_VARS=()
     for VAR in "${REQUIRED_VARS[@]}"; do
         if [ -z "${!VAR}" ]; then
-            MISSING_VARS+=("$VAR")
+            CONFIG_VALID=false
         fi
     done
 
-    if [ ${#MISSING_VARS[@]} -gt 0 ]; then
-        echo -e "\n\e[1;31m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
-        echo -e "\e[1;37m  ⚠️  CONFIGURATION INCOMPLETE\e[0m"
-        echo -e "\e[1;31m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
-        echo -e "\n\e[1;31m[ERROR]\e[0m The following required variables are missing or empty:"
-        for VAR in "${MISSING_VARS[@]}"; do
-            echo -e "  \e[1;31m✗\e[0m \e[1;37m$VAR\e[0m"
-        done
-        echo -e "\n\e[1;36mEdit:\e[0m \e[1;33mnano $ENV_FILE\e[0m"
-        echo -e "\e[1;36mRe-run:\e[0m \e[1;33mcsa\e[0m"
-        echo -e "\e[1;31m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m\n"
-        exit 1
-    fi
-
-    # Ensure authentication for Gemini is set up via either API Key or GCP Project ID
+    # Gemini credential check
     if [[ "$LLM_PROVIDER" == "gemini" ]] && [ -z "$GEMINI_API_KEY" ] && [ -z "$PROJECT_ID" ]; then
-        echo -e "\n\e[1;31m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
-        echo -e "\e[1;37m  ⚠️  MISSING GEMINI CREDENTIALS\e[0m"
-        echo -e "\e[1;31m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
-        echo -e "\n\e[1;31m[ERROR]\e[0m LLM_PROVIDER is set to 'gemini' but no credentials found."
-        echo -e "Configure \e[1;37mGEMINI_API_KEY\e[0m (developer) or \e[1;37mPROJECT_ID\e[0m (GCP Vertex AI)."
-        echo -e "\n\e[1;36mEdit:\e[0m \e[1;33mnano $ENV_FILE\e[0m"
-        echo -e "\e[1;36mRe-run:\e[0m \e[1;33mcsa\e[0m"
-        echo -e "\e[1;31m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m\n"
-        exit 1
+        CONFIG_VALID=false
     fi
 
     # Setup Defaults
@@ -138,7 +110,7 @@ load_config() {
     REMEDIATION_DIR="${REMEDIATION_DIR:-/opt/ai-soc/remediation_scripts}"
     NOISE_FILTER="${NOISE_FILTER:-favicon\\.ico|robots\\.txt|apple-touch-icon|AH00124|AH01071|File does not exist: /var/www/html}"
     MODEL_API_URL="https://aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/global/publishers/google/models/${MODEL_ID}:streamGenerateContent"
-    }
+}
 
 check_dependencies() {
     local missing_deps=0
@@ -576,6 +548,14 @@ display_header() {
 interactive_menu() {
     while true; do
         echo -e "\n\e[1;35m[\e[1;36m SYSTEM MAIN MENU \e[1;35m]\e[0m"
+        
+        # Show config warning if .env not configured
+        if [ "$CONFIG_VALID" != "true" ]; then
+            echo -e "\e[1;31m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
+            echo -e "\e[1;37m  ⚠️  .env NOT CONFIGURED — Edit \e[1;33m$ENV_FILE\e[0m \e[1;37mand set \e[1;32mCONFIGURED=true\e[0m"
+            echo -e "\e[1;31m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
+        fi
+        
         echo -e "\e[1;36m>\e[0m \e[1;32m1)\e[0m \e[1;37mStart Live Log Scan\e[0m"
         echo -e "   \e[0;90mTime ranges: 24h | 3d | 7d | 14d | Current month\e[0m"
         echo -e "\e[1;36m>\e[0m \e[1;32m2)\e[0m \e[1;37mProactive Hardening Audit\e[0m"
@@ -585,6 +565,10 @@ interactive_menu() {
         read -p "$(echo -e "\e[1;36m[INPUT]\e[0m Select an option [1-4]: ")" choice
         case $choice in
             1)
+                if [ "$CONFIG_VALID" != "true" ]; then
+                    echo -e "\e[1;31m[ERROR]\e[0m Configure .env first — edit \e[1;33m$ENV_FILE\e[0m and set \e[1;32mCONFIGURED=true\e[0m\n"
+                    continue
+                fi
                 # Time-range submenu
                 echo -e "\n\e[1;35m[ \e[1;36mSELECT TIME RANGE \e[1;35m]\e[0m"
                 echo -e "\e[1;36m>\e[0m \e[1;32m1)\e[0m \e[1;37mLast 24 hours\e[0m"
@@ -800,6 +784,10 @@ if [ "$INTERACTIVE" -eq 1 ]; then
     interactive_menu
 else
     load_config
+    if [ "$CONFIG_VALID" != "true" ]; then
+        log_error "Cannot run cron scan: .env not configured. Set CONFIGURED=true in $ENV_FILE"
+        exit 1
+    fi
     check_dependencies
     parse_logs
     if analyze_with_ai; then
