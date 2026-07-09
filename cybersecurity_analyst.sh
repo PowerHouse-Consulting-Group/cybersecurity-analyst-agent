@@ -17,7 +17,7 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="${SCRIPT_DIR}/.env"
 LOCKFILE="/tmp/daily_log_analyst.lock"
-VERSION="v1.1.4"
+VERSION="v1.1.5"
 umask 077
 JSON_PAYLOAD_FILE=$(mktemp /tmp/gemini_payload.XXXXXX.json)
 RAW_RESPONSE_FILE=$(mktemp /tmp/gemini_response.XXXXXX.json)
@@ -64,11 +64,12 @@ load_config() {
         cp "${SCRIPT_DIR}/.env.example" "$ENV_FILE"
         echo -e "\e[1;32m[OK]\e[0m Created: \e[1;33m$ENV_FILE\e[0m"
         echo -e "\n\e[1;37mYou MUST configure the following before running scans:\e[0m"
-        echo -e "  \e[1;32m1.\e[0m \e[1;37mYOUR_EMAIL\e[0m        — Where reports are sent"
-        echo -e "  \e[1;32m2.\e[0m \e[1;37mLLM_PROVIDER\e[0m      — AI provider (gemini, openai, claude, local)"
-        echo -e "  \e[1;32m3.\e[0m \e[1;37mMODEL_ID\e[0m          — AI model to use"
-        echo -e "  \e[1;32m4.\e[0m \e[1;37mAPI Key\e[0m           — Your provider's API key"
-        echo -e "  \e[1;32m5.\e[0m \e[1;37mLog Paths\e[0m         — Paths to your server logs"
+        echo -e "  \e[1;32m1.\e[0m \e[1;37mCONFIGURED=true\e[0m   — Set this to \e[1;32mtrue\e[0m at the top of the file"
+        echo -e "  \e[1;32m2.\e[0m \e[1;37mYOUR_EMAIL\e[0m        — Where reports are sent"
+        echo -e "  \e[1;32m3.\e[0m \e[1;37mLLM_PROVIDER\e[0m      — AI provider (gemini, openai, claude, local)"
+        echo -e "  \e[1;32m4.\e[0m \e[1;37mMODEL_ID\e[0m          — AI model to use"
+        echo -e "  \e[1;32m5.\e[0m \e[1;37mAPI Key\e[0m           — Your provider's API key"
+        echo -e "  \e[1;32m6.\e[0m \e[1;37mLog Paths\e[0m         — Paths to your server logs"
         echo -e "\n\e[1;36mEdit the file:\e[0m"
         echo -e "  \e[1;33mnano $ENV_FILE\e[0m"
         echo -e "\n\e[1;36mThen re-run:\e[0m"
@@ -80,6 +81,19 @@ load_config() {
     set -a
     source "$ENV_FILE"
     set +a
+
+    # Sentinel: block if user hasn't explicitly set CONFIGURED=true
+    if [ "$CONFIGURED" != "true" ]; then
+        echo -e "\n\e[1;31m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
+        echo -e "\e[1;37m  ⚠️  .env NOT CONFIGURED\e[0m"
+        echo -e "\e[1;31m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
+        echo -e "\n\e[1;31m[ERROR]\e[0m This is a default .env file with placeholder values."
+        echo -e "You must edit it and set \e[1;37mCONFIGURED=true\e[0m at the top before running scans."
+        echo -e "\n\e[1;36mEdit:\e[0m \e[1;33mnano $ENV_FILE\e[0m"
+        echo -e "\e[1;36mRe-run:\e[0m \e[1;33mcsa\e[0m"
+        echo -e "\e[1;31m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m\n"
+        exit 1
+    fi
 
     # Validate Required Variables
     local REQUIRED_VARS=("YOUR_EMAIL" "MODEL_ID")
@@ -161,12 +175,30 @@ check_dependencies() {
 
 # 2. Parse Server Logs
 parse_logs() {
-    log_info "Starting weekly log analysis for date pattern: '${DATE_PATTERN}'"
+    local LOG_SINCE="${1:-7 days ago}"
+    local LOG_MTIME="${2:-7}"
+    local RANGE_LABEL="${3:-Last 7 days}"
+
+    # Compute DATE_PATTERN for syslog/mail.log grep
+    if [[ "$LOG_SINCE" =~ ago ]]; then
+        # Relative range: compute start month abbreviation
+        DATE_PATTERN="^$(date -d "$LOG_SINCE" +'%b' 2>/dev/null || date +'%b')"
+        # If start month differs from current month, include both
+        local CURRENT_MONTH_ABBR=$(date +'%b')
+        if [ "$DATE_PATTERN" != "^$CURRENT_MONTH_ABBR" ]; then
+            DATE_PATTERN="^($CURRENT_MONTH_ABBR|$(date -d "$LOG_SINCE" +'%b' 2>/dev/null))"
+        fi
+    else
+        # Absolute range (e.g. "Jul 01"): use the month from LOG_SINCE
+        DATE_PATTERN="^$(echo "$LOG_SINCE" | awk '{print $1}')"
+    fi
+
+    log_info "Starting log analysis for: ${RANGE_LABEL}"
 
     # Apache Logs
     if [[ -n "$APACHE_LOG_DIR" && -d "$APACHE_LOG_DIR" ]]; then
         log_info "--> Analyzing Apache/ModSecurity Logs in $APACHE_LOG_DIR..."
-        APACHE_ERRORS=$(nice -n 19 ionice -c 2 -n 7 sudo find "$APACHE_LOG_DIR" -type f -name "*.error.log" -mtime -7 \
+        APACHE_ERRORS=$(nice -n 19 ionice -c 2 -n 7 sudo find "$APACHE_LOG_DIR" -type f -name "*.error.log" -mtime -${LOG_MTIME} \
             -exec nice -n 19 ionice -c 2 -n 7 grep -H -E "$KEYWORDS" {} + 2>/dev/null \
             | grep -vE "$NOISE_FILTER" \
             | cut -c 1-"$MAX_LINE_LENGTH" \
@@ -183,7 +215,7 @@ parse_logs() {
     # Nginx Logs
     if [[ -n "$NGINX_LOG_DIR" && -d "$NGINX_LOG_DIR" ]]; then
         log_info "--> Analyzing Nginx Logs in $NGINX_LOG_DIR..."
-        NGINX_ERRORS=$(nice -n 19 ionice -c 2 -n 7 sudo find "$NGINX_LOG_DIR" -type f -name "*.error.log" -mtime -7 \
+        NGINX_ERRORS=$(nice -n 19 ionice -c 2 -n 7 sudo find "$NGINX_LOG_DIR" -type f -name "*.error.log" -mtime -${LOG_MTIME} \
             -exec nice -n 19 ionice -c 2 -n 7 grep -H -E "$KEYWORDS" {} + 2>/dev/null \
             | grep -vE "$NOISE_FILTER" \
             | cut -c 1-"$MAX_LINE_LENGTH" \
@@ -215,8 +247,8 @@ parse_logs() {
 
     # Journalctl Logs (systemd)
     if [[ "$USE_JOURNALCTL" == "true" ]]; then
-        log_info "--> Analyzing Journalctl System Logs (Last 7 days)..."
-        JOURNAL_ERRORS=$(nice -n 19 ionice -c 2 -n 7 journalctl -p 0..3 --since "7 days ago" --no-pager 2>/dev/null \
+        log_info "--> Analyzing Journalctl System Logs (${RANGE_LABEL})..."
+        JOURNAL_ERRORS=$(nice -n 19 ionice -c 2 -n 7 journalctl -p 0..3 --since "${LOG_SINCE}" --no-pager 2>/dev/null \
             | grep -vE "$NOISE_FILTER" \
             | cut -c 1-"$MAX_LINE_LENGTH" \
             | sort \
@@ -266,7 +298,7 @@ parse_logs() {
     fi
 
     if [ -z "$SUMMARY_DATA" ]; then
-        log_info "Pre-check complete. No new notable events found for this week."
+        log_info "Pre-check complete. No new notable events found for ${RANGE_LABEL}."
         exit 0
     fi
 }
@@ -544,7 +576,7 @@ display_header() {
 interactive_menu() {
     while true; do
         echo -e "\n\e[1;35m[\e[1;36m SYSTEM MAIN MENU \e[1;35m]\e[0m"
-        echo -e "\e[1;36m>\e[0m \e[1;32m1)\e[0m \e[1;37mStart Live Log Scan (Weekly Analysis)\e[0m"
+        echo -e "\e[1;36m>\e[0m \e[1;32m1)\e[0m \e[1;37mStart Live Log Scan\e[0m"
         echo -e "\e[1;36m>\e[0m \e[1;32m2)\e[0m \e[1;37mProactive Hardening Audit\e[0m"
         echo -e "\e[1;36m>\e[0m \e[1;35m3)\e[0m \e[1;33m🔥 Upgrade to PRO Version (Activate License Key)\e[0m"
         echo -e "\e[1;36m>\e[0m \e[1;32m4)\e[0m \e[1;37mQuit Application\e[0m"
@@ -552,10 +584,30 @@ interactive_menu() {
         read -p "$(echo -e "\e[1;36m[INPUT]\e[0m Select an option [1-4]: ")" choice
         case $choice in
             1)
-                echo -e "\n\e[1;33m[INFO] Starting Live Log Scan. Press Ctrl+C to interrupt and return to menu.\e[0m\n"
+                # Time-range submenu
+                echo -e "\n\e[1;35m[ \e[1;36mSELECT TIME RANGE \e[1;35m]\e[0m"
+                echo -e "\e[1;36m>\e[0m \e[1;32m1)\e[0m \e[1;37mLast 24 hours\e[0m"
+                echo -e "\e[1;36m>\e[0m \e[1;32m2)\e[0m \e[1;37mLast 3 days\e[0m"
+                echo -e "\e[1;36m>\e[0m \e[1;32m3)\e[0m \e[1;37mLast 7 days\e[0m"
+                echo -e "\e[1;36m>\e[0m \e[1;32m4)\e[0m \e[1;37mLast 14 days\e[0m"
+                echo -e "\e[1;36m>\e[0m \e[1;32m5)\e[0m \e[1;37mCurrent month\e[0m"
+                echo -e "\e[1;36m>\e[0m \e[1;32m6)\e[0m \e[1;37mCancel\e[0m"
+                echo -e "\e[1;35m-------------------------------------------------\e[0m"
+                read -p "$(echo -e "\e[1;36m[INPUT]\e[0m Select time range [1-6]: ")" range_choice
+                case $range_choice in
+                    1) LOG_SINCE="24 hours ago"; LOG_MTIME="1"; RANGE_LABEL="Last 24 hours" ;;
+                    2) LOG_SINCE="3 days ago";  LOG_MTIME="3"; RANGE_LABEL="Last 3 days" ;;
+                    3) LOG_SINCE="7 days ago";  LOG_MTIME="7"; RANGE_LABEL="Last 7 days" ;;
+                    4) LOG_SINCE="14 days ago"; LOG_MTIME="14"; RANGE_LABEL="Last 14 days" ;;
+                    5) LOG_SINCE="$(date +'%b') 01"; LOG_MTIME="$(date +%d)"; RANGE_LABEL="Current month ($(date +'%b %Y'))" ;;
+                    6) echo -e "\e[1;33m[INFO] Scan cancelled. Returning to menu...\e[0m"; continue ;;
+                    *) echo -e "\e[1;31m[ERROR] Invalid selection. Returning to menu...\e[0m"; continue ;;
+                esac
+                
+                echo -e "\n\e[1;33m[INFO] Starting Live Log Scan — ${RANGE_LABEL}. Press Ctrl+C to interrupt and return to menu.\e[0m\n"
                 (
                     trap 'echo -e "\n\e[1;33m[INFO] Scan interrupted by user. Returning to menu...\e[0m"; exit 130' INT
-                    parse_logs
+                    parse_logs "$LOG_SINCE" "$LOG_MTIME" "$RANGE_LABEL"
                     if analyze_with_ai; then
                         process_remediation
                         handle_output
