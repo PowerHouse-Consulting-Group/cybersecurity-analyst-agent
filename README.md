@@ -39,7 +39,7 @@ Before installing, ensure your system meets the following requirements. The scri
 
 ### Option A: Universal Installer (Recommended)
 ```bash
-curl -sL https://raw.githubusercontent.com/PowerHouse-Consulting-Group/cybersecurity-analyst-agent/main/install.sh | sudo bash
+curl -fsSL https://powerhouseconsulting.group/cybersecurity-analyst-agent/install.sh | sudo bash
 ```
 
 ### Option B: Package Managers (.deb / .rpm)
