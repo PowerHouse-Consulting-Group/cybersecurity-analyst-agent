@@ -17,6 +17,7 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="${SCRIPT_DIR}/.env"
 LOCKFILE="/tmp/daily_log_analyst.lock"
+VERSION="v1.1.1"
 umask 077
 JSON_PAYLOAD_FILE=$(mktemp /tmp/gemini_payload.XXXXXX.json)
 RAW_RESPONSE_FILE=$(mktemp /tmp/gemini_response.XXXXXX.json)
@@ -536,7 +537,7 @@ display_header() {
     echo -e "\e[1;36m\____/\__, /_.___/\___/_/      \e[1;35m/____/\___/\___/\__,_/_/  /_/\__/\__, /  "
     echo -e "\e[1;36m     /____/                                                    \e[1;35m/____/   \e[0m"
     echo -e "\e[1;35m===========================================================================\e[0m"
-    echo -e "\e[1;37m        AI Cybersecurity Log Analyst - \e[1;32mCommunity Edition\e[0m"
+    echo -e "\e[1;37m        AI Cybersecurity Log Analyst - \e[1;32mCommunity Edition \e[1;36m$VERSION\e[0m"
     echo -e "\n"
 }
 
